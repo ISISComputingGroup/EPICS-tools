@@ -17,8 +17,8 @@ AC_CONFIG_SRCDIR([connectionItem.cc])
 # we don't need config.h for now
 #AC_CONFIG_HEADER([config.h])
 
-CFLAGS="$CFLAGS -Wall"
-CXXFLAGS="$CXXFLAGS -Wall"
+CFLAGS="$CFLAGS -Wall -g"
+CXXFLAGS="$CXXFLAGS -Wall -g"
 
 # Checks for programs.
 AC_PROG_CXX
