@@ -39,6 +39,7 @@ fi
 MKDIR="mkdir -p -m 755"
 AC_SUBST(MKDIR)
 
+LDFLAGS="$LDFLAGS -static"
 
 dnl ### Custom settings. ############################################
 dnl AC_MSG_CHECKING(whether to allow 64bit compilation)
@@ -483,7 +484,7 @@ AC_ARG_WITH(openssl,
 	LDFLAGS="$LDFLAGS $OPENSSLLDFLAGS"
 
 	AC_CHECK_HEADER([openssl/ssl.h],
-	    [LIBS="$LIBS -lssl -lcrypto"
+	    [LIBS="$LIBS -lssl -lcrypto -lz"
 	    AC_MSG_CHECKING(for openssl libraries -lssl and -lcrypto)
 	    AC_TRY_LINK([#include <openssl/ssl.h>
 		],[SSL_library_init()],

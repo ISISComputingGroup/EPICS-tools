@@ -19,6 +19,7 @@ AC_CONFIG_SRCDIR([connectionItem.cc])
 
 CFLAGS="$CFLAGS -Wall -g"
 CXXFLAGS="$CXXFLAGS -Wall -g"
+LDFLAGS="$LDFLAGS -static"
 
 # Checks for programs.
 AC_PROG_CXX
