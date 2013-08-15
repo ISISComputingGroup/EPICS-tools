@@ -350,7 +350,7 @@ StartInit(pCE)
 {
     int i;
     pid_t iNewGrp;
-    extern char **environ;
+//    extern char **environ;
     int pin[2];
     int pout[2];
     static char *apcArgv[] = {
@@ -497,7 +497,7 @@ VirtDev(pCE)
     static struct termios n_tio;
     int i;
     pid_t iNewGrp;
-    extern char **environ;
+//    extern char **environ;
     char *pcShell, **ppcArgv;
 
     fflush(stdout);

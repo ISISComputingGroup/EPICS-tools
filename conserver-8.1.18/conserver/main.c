@@ -1156,8 +1156,8 @@ main(argc, argv)
     int i;
     FILE *fpConfig = (FILE *)0;
     static char acOpts[] = "7a:b:c:C:dDEFhiL:m:M:noO:p:P:RSuU:Vv";
-    extern int optopt;
-    extern char *optarg;
+//    extern int optopt;
+//    extern char *optarg;
     struct passwd *pwd;
     char *origuser = (char *)0;
     char *curuser = (char *)0;

@@ -840,7 +840,7 @@ ExecCmd()
 {
     int i;
     pid_t iNewGrp;
-    extern char **environ;
+//    extern char **environ;
     int pin[2];
     int pout[2];
     static char *apcArgv[] = {
@@ -1933,9 +1933,9 @@ main(argc, argv)
     static STRING *acPorts = (STRING *)0;
     static char acOpts[] =
 	"7aAb:B:c:C:d:De:EfFhiIl:M:np:PqQrRsSt:uUvVwWxz:Z:";
-    extern int optind;
-    extern int optopt;
-    extern char *optarg;
+//    extern int optind;
+//    extern int optopt;
+//    extern char *optarg;
     static STRING *textMsg = (STRING *)0;
     int cmdi;
     static STRING *consoleName = (STRING *)0;
