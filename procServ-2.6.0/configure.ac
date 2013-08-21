@@ -20,7 +20,9 @@ AC_CONFIG_SRCDIR([connectionItem.cc])
 DEBUG_TYPE="-g -O0 -fno-omit-frame-pointer" # -gcoff
 CFLAGS="$CFLAGS -Wall $DEBUG_TYPE"
 CXXFLAGS="$CXXFLAGS -Wall $DEBUG_TYPE"
-LDFLAGS="$LDFLAGS -static -Wl,-Map,linkmap.txt"
+if test "$host_os" = "cygwin"; then
+    LDFLAGS="$LDFLAGS -static -Wl,-Map,linkmap.txt"
+fi
 LIBS="$LIBS"
 
 # Checks for programs.

@@ -39,7 +39,9 @@ fi
 MKDIR="mkdir -p -m 755"
 AC_SUBST(MKDIR)
 
-LDFLAGS="$LDFLAGS -static"
+if test "$host_os" = "cygwin"; then
+    LDFLAGS="$LDFLAGS -static"
+fi
 
 dnl ### Custom settings. ############################################
 dnl AC_MSG_CHECKING(whether to allow 64bit compilation)
