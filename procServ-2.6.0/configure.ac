@@ -17,9 +17,11 @@ AC_CONFIG_SRCDIR([connectionItem.cc])
 # we don't need config.h for now
 #AC_CONFIG_HEADER([config.h])
 
-CFLAGS="$CFLAGS -Wall -g"
-CXXFLAGS="$CXXFLAGS -Wall -g"
-LDFLAGS="$LDFLAGS -static"
+DEBUG_TYPE="-g -O0 -fno-omit-frame-pointer" # -gcoff
+CFLAGS="$CFLAGS -Wall $DEBUG_TYPE"
+CXXFLAGS="$CXXFLAGS -Wall $DEBUG_TYPE"
+LDFLAGS="$LDFLAGS -static -Wl,-Map,linkmap.txt"
+LIBS="$LIBS"
 
 # Checks for programs.
 AC_PROG_CXX
