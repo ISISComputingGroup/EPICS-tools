@@ -34,7 +34,7 @@ bool   logPortLocal;             // This restricts log port access to localhost
 bool   ctlPortLocal = true;      // Restrict control connections to localhost
 bool   autoRestart = true;       // Enables instant restart of exiting child
 bool   waitForManualStart = false;  // Waits for telnet cmd to manually start child
-bool   shutdownServer = false;   // To keep the server from shutting down
+volatile bool   shutdownServer = false;   // To keep the server from shutting down
 bool   quiet = false;            // Suppress info output (server)
 bool   setCoreSize = false;      // Set core size for child
 char   *procservName;            // The name of this beast (server)
@@ -85,11 +85,14 @@ void openLogFile();
 void ttySetCharNoEcho(bool save);
 
 // Signal handlers
-void OnSigPipe(int);
-void OnSigTerm(int);
-void OnSigHup(int);
+static void OnSigPipe(int);
+static void OnSigTerm(int);
+static void OnSigHup(int);
+static void OnSigTtin(int);
+
 // Counter used for communication between sig handler and main()
-int sigPipeSet;
+static volatile sig_atomic_t sigPipeSet = 0;  
+static volatile sig_atomic_t sigTtinSet = 0;  
 
 void writePidFile()
 {
@@ -436,6 +439,8 @@ int main(int argc,char * argv[])
     sigaction(SIGTERM, &sig, NULL);
     sig.sa_handler = &OnSigHup;
     sigaction(SIGHUP, &sig, NULL);
+    sig.sa_handler = &OnSigTtin;    // If we handle it, caller gets EINTR; if we ignore it, caller gets EIO
+    sigaction(SIGTTIN, &sig, NULL);
     sig.sa_handler = SIG_IGN;
     sigaction(SIGXFSZ, &sig, NULL);
     if (inFgMode) {
@@ -527,6 +532,11 @@ int main(int argc,char * argv[])
             sprintf( buf, "@@@ Got a sigPipe signal: Did the child close its tty?" NL);
             SendToAll( buf, strlen(buf), NULL );
             sigPipeSet--;
+        }
+        if (sigTtinSet > 0) {
+            sprintf( buf, "@@@ Got a sigTtin signal" NL);
+            SendToAll( buf, strlen(buf), NULL );
+            sigTtinSet--;
         }
 
         // Prepare FD set for select()
@@ -702,23 +712,29 @@ void DeleteConnection(connectionItem *ci)
 	assert(connectionNo>=0);
 }
 
-void OnSigPipe(int)
+static void OnSigPipe(int)
 {
     PRINTF("SigPipe received\n");
     sigPipeSet++;
 }
 
-void OnSigTerm(int)
+static void OnSigTerm(int)
 {
     PRINTF("SigTerm received\n");
     processFactorySendSignal(killSig);
     shutdownServer = true;
 }
 
-void OnSigHup(int)
+static void OnSigHup(int)
 {
     PRINTF("SigHup received\n");
     openLogFile();
+}
+
+static void OnSigTtin(int)
+{
+    PRINTF("SigTtin received\n");
+    sigTtinSet++;
 }
 
 // Fork the daemon and exit the parent

@@ -169,8 +169,8 @@ void processClass::readFromFd(void)
     char  buf[1600];
 
     int len = read(_fd, buf, sizeof(buf)-1);
-    if (len < 1) {
-        PRINTF("processItem: Got error reading input connection\n");
+    if (len < 0) {
+        PRINTF("processItem: Got error reading input connection: %s\n", strerror(errno));
         _markedForDeletion = true;
     } else if (len == 0) {
         PRINTF("processItem: Got EOF reading input connection\n");
@@ -185,9 +185,16 @@ void processClass::readFromFd(void)
 int processClass::Send( const char * buf, int count )
 {
     int status = 0;
-    int i, j, ign = 0;
+    int i, j, nsend, ign = 0;
     char buf3[LINEBUF_LENGTH+1];
     char *buf2 = buf3;
+	fd_set writefds;
+	struct timeval select_timeout;
+	FD_ZERO(&writefds);
+	FD_SET(_fd, &writefds);
+	int wait_time = 10;
+	select_timeout.tv_sec = wait_time;
+	select_timeout.tv_usec = 0;
 
                                 // Create working copy of buffer
     if ( count > LINEBUF_LENGTH ) buf2 = (char*) calloc (count + 1, 1);
@@ -202,14 +209,39 @@ int processClass::Send( const char * buf, int count )
     } else {                    // Plain buffer copy
         strncpy (buf2, buf, count);
     }
-        buf2[count - ign] = '\0';
+	nsend = count - ign;
+    buf2[nsend] = '\0';
 
-    if ( count > 0 )
+	// we seem to get occasional hangs in cygwin fhandler_pty_master::doecho()
+	// not sure is using select() will help, but will try
+    if ( nsend > 0 )
     {
-	status = write( _fd, buf2, count - ign );
-	if ( status < 0 ) _markedForDeletion = true;
-    }
-
+		if ( (status = select(_fd+1, NULL, &writefds, NULL, &select_timeout)) > 0 )
+		{
+			status = write( _fd, buf2, nsend );
+			if ( status < 0 ) // write() failed
+			{
+                PRINTF("processItem: Got error writing to input connection: %s\n", strerror(errno));
+				_markedForDeletion = true;
+			}
+			else if ( status != nsend ) // write() did not fully complete
+			{
+				PRINTF("processItem: only wrote %d of %d characters\n", status, nsend);
+				_markedForDeletion = true;
+			}
+		}
+		else if ( 0 == status ) // select() timeout
+		{
+			PRINTF("processItem: select timeout after %d seconds\n", wait_time);
+			status = -1;
+			_markedForDeletion = true;
+		}
+		else // status < 0, select() error
+		{
+			PRINTF("processItem: select error: %s\n", strerror(errno));
+			_markedForDeletion = true;
+		}
+	}
     if ( count > LINEBUF_LENGTH ) free( buf2 );
     return status;
 }

@@ -9,19 +9,20 @@ AC_PREREQ([2.61])
 AC_INIT([procServ Process Server], [2.6.0], [tech-talk@aps.anl.gov], [procServ],
 	[http://sourceforge.net/projects/procserv/])
 AC_SUBST([PACKAGE_DATE],[04/16/2012])
-
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE([1.10 -Wall])
 
 AC_CONFIG_SRCDIR([connectionItem.cc])
 # we don't need config.h for now
 #AC_CONFIG_HEADER([config.h])
 
-DEBUG_TYPE="-g -O0 -fno-omit-frame-pointer" # -gcoff
+#DEBUG_TYPE="-g -O0 -fno-omit-frame-pointer" # -gcoff
+DEBUG_TYPE="-g" # -gcoff
 CFLAGS="$CFLAGS -Wall $DEBUG_TYPE"
 CXXFLAGS="$CXXFLAGS -Wall $DEBUG_TYPE"
 if test "$host_os" = "cygwin"; then
-    LDFLAGS="$LDFLAGS -static -Wl,-Map,linkmap.txt"
+    LDFLAGS="$LDFLAGS -static -Wl,-Map,procServ.map"
 fi
 LIBS="$LIBS"
 
