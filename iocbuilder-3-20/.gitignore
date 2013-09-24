@@ -1,0 +1,10 @@
+*.pyc
+
+# Built documentation
+/documentation/doxygen
+
+# Built distribution and egg
+/build
+/dist
+/iocbuilder.egg-info
+/Makefile.private
