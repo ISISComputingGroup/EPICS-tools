@@ -1,2 +1,3 @@
 procserv 2.6.0
 conserver 8.1.18
+VisualDCT 2.6.1274 from http://cosylab.com/resources/downloads_/
