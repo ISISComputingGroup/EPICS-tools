@@ -122,7 +122,6 @@ main(argc, argv)
     static int
       u_loop = 0;
     register int u_curopt;
-    extern int atoi();
 
     progname = strrchr(argv[0], '/');
     if ((char *)0 == progname)

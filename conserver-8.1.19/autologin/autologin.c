@@ -79,8 +79,6 @@ int iGrps = 0;
  * External variables
  */
 
-extern int optind;
-extern char *optarg;
 
 void make_utmp();
 void usage();
@@ -392,7 +390,6 @@ Process()
 #endif
 
     if (fMakeUtmp) {
-	extern char *ttyname();
 	make_utmp(pcLogin, (char *)0 != pcTty ? pcTty : ttyname(0));
     }
     /* Change ownership and modes on the tty.
