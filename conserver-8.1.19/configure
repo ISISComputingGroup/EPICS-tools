@@ -2218,10 +2218,6 @@ fi
 MKDIR="mkdir -p -m 755"
 
 
-if test "$host_os" = "cygwin"; then
-    LDFLAGS="$LDFLAGS -static"
-fi
-
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for port number specification" >&5
@@ -4719,6 +4715,12 @@ IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
+
+if test "$host_os" = "cygwin"; then
+    LDFLAGS="$LDFLAGS -static"
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: \"Enabling static linking\"" >&5
+$as_echo "\"Enabling static linking\"" >&6; }
+fi
 
 case "$host" in
 *-*-hpux*)

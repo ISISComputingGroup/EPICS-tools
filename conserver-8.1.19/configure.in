@@ -40,10 +40,6 @@ fi
 MKDIR="mkdir -p -m 755"
 AC_SUBST(MKDIR)
 
-if test "$host_os" = "cygwin"; then
-    LDFLAGS="$LDFLAGS -static"
-fi
-
 
 dnl ### Custom settings. ############################################
 dnl AC_MSG_CHECKING(whether to allow 64bit compilation)
@@ -386,6 +382,11 @@ AC_TRY_COMPILE([#include <sys/types.h>
 
 dnl ### Host specific checks. ######################################
 AC_CANONICAL_HOST
+
+if test "$host_os" = "cygwin"; then
+    LDFLAGS="$LDFLAGS -static"
+	AC_MSG_RESULT("Enabling static linking")
+fi
 
 case "$host" in
 *-*-hpux*)

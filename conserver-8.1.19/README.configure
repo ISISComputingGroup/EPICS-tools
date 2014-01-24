@@ -1,1 +1,2 @@
-./configure --with-libwrap --with-openssl
+./configure --with-libwrap --with-openssl --with-master=conserver.nd.rl.ac.uk --with-port=782 --with-pidfile=/cygdrive/c/windows/temp/conserver.pid
+
