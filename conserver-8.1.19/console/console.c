@@ -44,6 +44,7 @@
 #include <gssapi/gssapi.h>
 #endif
 
+#include "setconsoletitle.h"
 
 int fReplay = 0, fVersion = 0;
 int showExecData = 1;
@@ -1955,6 +1956,7 @@ main(argc, argv)
     static STRING *consoleName = (STRING *)0;
     short readSystemConf = 1;
     char *userConf = (char *)0;
+	char console_title[256];
     typedef struct zaps {
 	char *opt;
 	char *cmd;
@@ -2372,7 +2374,12 @@ main(argc, argv)
 	if (cmdarg != (char *)0)
 	    free(cmdarg);
 	if ((cmdarg = StrDup(argv[optind++])) == (char *)0)
+	    {
 	    OutOfMem();
+		}
+		snprintf(console_title, sizeof(console_title), "Console: %s@%s", cmdarg, config->master); /* (config->username != NULL ? config->username : "") */
+		console_title[sizeof(console_title)-1] = '\0';
+		set_console_title(console_title);
     } else if (*pcCmd == 't') {
 	/* text message */
 	if (optind >= argc) {
