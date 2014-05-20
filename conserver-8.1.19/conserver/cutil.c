@@ -895,9 +895,18 @@ FileOpen(path, flag, mode)
 {
     CONSFILE *cfp;
     int fd;
-
-    if (-1 == (fd = open(path, flag, mode))) {
-	CONDDEBUG((2, "FileOpen(): failed to open `%s'", path));
+    char path_ex[1024];
+    time_t now;
+    struct tm now_tm;
+    time(&now);
+    localtime_r(&now, &now_tm);
+    if (0 == strftime(path_ex, sizeof(path_ex)-1, path, &now_tm))
+    {
+        strncpy(path_ex, path, sizeof(path_ex)-1);
+    }
+    path_ex[sizeof(path_ex)-1] = '\0';
+    if (-1 == (fd = open(path_ex, flag, mode))) {
+	CONDDEBUG((2, "FileOpen(): failed to open `%s' (`%s')", path_ex, path));
 	return (CONSFILE *)0;
     }
     if ((cfp = (CONSFILE *)calloc(1, sizeof(CONSFILE)))
@@ -932,7 +941,7 @@ FileOpen(path, flag, mode)
     }
 #endif
 
-    CONDDEBUG((2, "FileOpen(): opened `%s' as fd %d", path, fd));
+    CONDDEBUG((2, "FileOpen(): opened `%s' (`%s') as fd %d", path_ex, path, fd));
     return cfp;
 }
 

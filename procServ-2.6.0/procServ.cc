@@ -71,6 +71,8 @@ int    logFileFD=-1;             // FD for log file
 int    logPort;                  // Port no. for logger connections
 int    debugFD=-1;               // FD for debug output
 
+static int save_tm_yday = -1;    // current day, used for log rotating
+
 #define MAX_CONNECTIONS 64
 
 // mLoop runs the program
@@ -598,11 +600,13 @@ void SendToAll(const char * message,int count,const connectionItem * sender)
     time_t now;
     struct tm now_tm;
 
-    if (stampLog) {
-        time(&now);
-        localtime_r(&now, &now_tm);
-        strftime(stamp, sizeof(stamp)-1, stampFormat, &now_tm);
-        len = strlen(stamp);
+    time(&now);
+    localtime_r(&now, &now_tm);
+    strftime(stamp, sizeof(stamp)-1, stampFormat, &now_tm);
+    len = strlen(stamp);
+    if (now_tm.tm_yday != save_tm_yday)
+    {
+        openLogFile();  // reopen log file on day change to allow for log file rotation
     }
     // Log the traffic to file / stdout (debug)
     if (sender==NULL || sender->isProcess())
@@ -800,6 +804,8 @@ int checkCommandFile(const char * command)
         return -1;
     }
 
+// if we are using cygwin to run windows executables, permission bits are meaningless
+#ifndef __CYGWIN__
     if (must_perm != (s.st_mode & must_perm)) {
         fprintf(stderr, "%s: Error - Please change permissions on %s to at least ---x--x--x\n"
                 "procServ is not able to continue without execute permission\n",
@@ -813,23 +819,35 @@ int checkCommandFile(const char * command)
                 procservName, command);
         return 0;
     }
+#endif /* __CYGWIN__ */
 
     return 0;
 }
 
 void openLogFile()
 {
+    char logFileName[1024];
+    time_t now;
+    struct tm now_tm;
     if (-1 != logFileFD) {
         close(logFileFD);
     }
+    time(&now);
+    localtime_r(&now, &now_tm);
+    save_tm_yday = now_tm.tm_yday;
     if (logFile) {
-        logFileFD = open(logFile, O_CREAT|O_WRONLY|O_APPEND, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+        if (0 == strftime(logFileName, sizeof(logFileName)-1, logFile, &now_tm))
+        {
+            strncpy(logFileName, logFile, sizeof(logFileName)-1);
+        }
+        logFileName[sizeof(logFileName)-1] = '\0';
+        logFileFD = open(logFileName, O_CREAT|O_WRONLY|O_APPEND, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
         if (-1 == logFileFD) {         // Don't stop here - just go without
             fprintf(stderr,
-                    "%s: unable to open log file %s\n",
-                    procservName, logFile);
+                    "%s: unable to open log file %s (%s)\n",
+                    procservName, logFileName, logFile);
         } else {
-            PRINTF("Opened file %s for logging\n", logFile);
+            PRINTF("Opened file %s for logging\n", logFileName);
         }
     }
 }
