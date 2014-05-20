@@ -783,8 +783,6 @@ void forkAndGo()
 int checkCommandFile(const char * command)
 {
     struct stat s;
-    mode_t must_perm   =         S_IXUSR        |S_IXGRP        |S_IXOTH;
-    mode_t should_perm = S_IRUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
 
     PRINTF("Checking command file validity\n");
 
@@ -806,6 +804,8 @@ int checkCommandFile(const char * command)
 
 // if we are using cygwin to run windows executables, permission bits are meaningless
 #ifndef __CYGWIN__
+    mode_t must_perm   =         S_IXUSR        |S_IXGRP        |S_IXOTH;
+    mode_t should_perm = S_IRUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH;
     if (must_perm != (s.st_mode & must_perm)) {
         fprintf(stderr, "%s: Error - Please change permissions on %s to at least ---x--x--x\n"
                 "procServ is not able to continue without execute permission\n",
