@@ -599,6 +599,7 @@ void SendToAll(const char * message,int count,const connectionItem * sender)
     int len = 0;
     time_t now;
     struct tm now_tm;
+	static bool log_stamp_sent = false;
 
     time(&now);
     localtime_r(&now, &now_tm);
@@ -607,13 +608,36 @@ void SendToAll(const char * message,int count,const connectionItem * sender)
     if (now_tm.tm_yday != save_tm_yday)
     {
         openLogFile();  // reopen log file on day change to allow for log file rotation
+		log_stamp_sent = false;
     }
     // Log the traffic to file / stdout (debug)
     if (sender==NULL || sender->isProcess())
     {
         if (logFileFD > 0) {
-            if (stampLog) write(logFileFD, stamp, len);
-            write(logFileFD, message, count);
+            if (stampLog) 
+			{
+			    // Windows does not support line buffering, so we can get parts of lines - hence need to track of when to send timestamp
+			    int i = 0, j = 0;
+			    for(i = 0; i < count; ++i)
+				{
+					if (!log_stamp_sent)
+					{
+						write(logFileFD, stamp, len);
+						log_stamp_sent = true;
+					}
+				    if (message[i] == '\n')
+					{
+                        write(logFileFD, message+j, i-j+1);
+						j = i + 1;
+						log_stamp_sent = false;
+					}
+				}
+                write(logFileFD, message+j, count-j);  // finish off rest of line with no newline at end
+			}
+			else
+			{
+                write(logFileFD, message, count);
+			}
             fsync(logFileFD);
         }
         if (false == inFgMode && debugFD > 0) write(debugFD, message, count);
