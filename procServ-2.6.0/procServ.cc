@@ -614,6 +614,7 @@ void SendToAll(const char * message,int count,const connectionItem * sender)
         if (logFileFD > 0) {
             if (stampLog) write(logFileFD, stamp, len);
             write(logFileFD, message, count);
+            fsync(logFileFD);
         }
         if (false == inFgMode && debugFD > 0) write(debugFD, message, count);
     }
