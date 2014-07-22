@@ -20,7 +20,7 @@ CFLAGS	= @CFLAGS@
 DEFS	= @DEFS@ -DSYSCONFDIR=\"$(sysconfdir)\"
 CPPFLAGS = -I.. -I$(top_srcdir) -I$(srcdir) -I$(top_srcdir)/conserver $(DEFS) @CPPFLAGS@
 LDFLAGS	= @LDFLAGS@
-LIBS	= @LIBS@
+LIBS	= @LIBS@ # -lreadline -lhistory -lcurses
 @SET_MAKE@
 
 
