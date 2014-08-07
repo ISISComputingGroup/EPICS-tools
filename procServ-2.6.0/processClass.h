@@ -29,6 +29,10 @@ protected:
     pid_t _pid;
     static processClass * _runningItem;
     static time_t _restartTime;
+	void terminateJob();
+#ifdef __CYGWIN__
+	HANDLE _hwinjob;
+#endif /* __CYGWIN__ */
 };
 
 

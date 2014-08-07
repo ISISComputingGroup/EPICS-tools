@@ -17,6 +17,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#ifdef __CYGWIN__
+#include <windows.h>
+#endif /* __CYGWIN__ */
+
 #ifndef PRINTF
 #define PRINTF if (inDebugMode) printf
 #endif

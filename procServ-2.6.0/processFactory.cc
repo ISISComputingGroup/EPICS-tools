@@ -16,6 +16,10 @@
 #include <string.h>
 #include <strings.h>
 
+#ifdef __CYGWIN__
+#include <sys/cygwin.h>
+#endif /* __CYGWIN__ */
+
 // forkpty()
 #ifdef HAVE_LIBUTIL_H      // FreeBSD
 #include <libutil.h>
@@ -102,7 +106,8 @@ processClass::~processClass()
 
                                 // Negative PID sends signal to all members of process group
     if ( _pid > 0 ) kill( -_pid, SIGKILL );
-    if ( _fd > 0 ) close( _fd );
+	terminateJob();
+	if ( _fd > 0 ) close( _fd );
     _runningItem = NULL;
 }
 
@@ -118,16 +123,45 @@ processClass::processClass(char *exe, char *argv[])
     struct rlimit corelimit;
     char buf[128];
 
+	_hwinjob = CreateJobObject(NULL, NULL);
+	if (_hwinjob == NULL)
+	{
+            fprintf(stderr, "CreateJobObject failed\n");
+	}
+
     _pid = forkpty(&_fd, factoryName, NULL, NULL);
 
     _markedForDeletion = _pid <= 0;
     if (_pid)                               // I am the parent
     {
-	if(_pid < 0) {
+	    if(_pid < 0) {
             fprintf(stderr, "Fork failed: %s\n", errno == ENOENT ? "No pty" : strerror(errno));
         } else {
             PRINTF("Created process %ld on %s\n", (long) _pid, factoryName);
         }
+	    int winpid = cygwin_internal(CW_CYGWIN_PID_TO_WINPID, _pid);
+        PRINTF("Created win process %ld on %s\n", (long) winpid, factoryName);
+
+		HANDLE hprocess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, winpid); 
+		if (hprocess != NULL)
+		{
+			if (AssignProcessToJobObject(_hwinjob, hprocess) != 0)
+			{
+				PRINTF("Assigned win process %ld to job object\n", (long)winpid);
+			}
+			else
+			{
+				fprintf(stderr, "AssignProcessToJobObject failed\n");
+			}
+			if (CloseHandle(hprocess) == 0)
+			{
+				fprintf(stderr, "CloseHandle failed\n");
+			}
+		}
+		else
+		{
+			fprintf(stderr, "OpenProcess failed for win process %ld\n", (long)winpid);
+		}
 
         // Don't start a new one before this time:
         _restartTime = holdoffTime + time(0);
@@ -139,9 +173,12 @@ processClass::processClass(char *exe, char *argv[])
         SendToAll( buf, strlen(buf), this );
         strcpy(buf, "@@@ @@@ @@@ @@@ @@@" NL);
         SendToAll( buf, strlen(buf), this );
+
+		
     }
     else                                    // I am the child
     {
+	    sleep(1);   // to allow AssignProcessToJobObject() to happen - the process we spawn may spawn other processes so we want it to inherit
         setsid();                                  // Become process group leader
         if ( setCoreSize ) {                       // Set core size limit?
             getrlimit( RLIMIT_CORE, &corelimit );
@@ -255,10 +292,37 @@ void processFactorySendSignal(int signal)
 	PRINTF("Sending signal %d to pid %ld\n",
 		signal, (long) processClass::_runningItem->_pid);
 	kill(-processClass::_runningItem->_pid,signal);
+	if (signal == killSig)
+	{
+	    processClass::_runningItem->terminateJob();
+	}
+	
     }
 }
 
 void processClass::restartOnce ()
 {
     _restartTime = 0;
+}
+
+void processClass::terminateJob()
+{
+#ifdef __CYGWIN__
+	if (_hwinjob != NULL)
+	{
+	    if (TerminateJobObject(_hwinjob, 1) == 0)
+		{
+			fprintf(stderr, "TerminateJobObject failed\n");
+		}
+	    if (CloseHandle(_hwinjob) == 0)
+		{
+			fprintf(stderr, "CloseHandle failed\n");
+		}
+		_hwinjob = NULL;
+	}
+	else
+	{
+		fprintf(stderr, "No job object\n");
+	}
+#endif
 }
