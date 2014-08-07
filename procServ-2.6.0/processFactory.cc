@@ -128,7 +128,23 @@ processClass::processClass(char *exe, char *argv[])
 	{
             fprintf(stderr, "CreateJobObject failed\n");
 	}
-
+	// set processes assigned to a job to automatically terminate when the job handle object is closed.
+	// This is for additional secuiry - we call TerminateJobObject() as well 
+	JOBOBJECT_EXTENDED_LIMIT_INFORMATION job_limits;
+	if (QueryInformationJobObject(_hwinjob, JobObjectExtendedLimitInformation, &job_limits, sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION), NULL) != 0)
+	{
+		job_limits.BasicLimitInformation.LimitFlags |= JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+		if (SetInformationJobObject(_hwinjob, JobObjectExtendedLimitInformation, &job_limits, sizeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION)) == 0)
+		{
+            fprintf(stderr, "SetInformationJobObject failed\n");
+		}
+	}
+	else
+	{
+            fprintf(stderr, "QueryInformationJobObject failed\n");
+	}
+	
+	
     _pid = forkpty(&_fd, factoryName, NULL, NULL);
 
     _markedForDeletion = _pid <= 0;
@@ -155,7 +171,7 @@ processClass::processClass(char *exe, char *argv[])
 			}
 			if (CloseHandle(hprocess) == 0)
 			{
-				fprintf(stderr, "CloseHandle failed\n");
+				fprintf(stderr, "CloseHandle(hprocess) failed\n");
 			}
 		}
 		else
@@ -316,13 +332,9 @@ void processClass::terminateJob()
 		}
 	    if (CloseHandle(_hwinjob) == 0)
 		{
-			fprintf(stderr, "CloseHandle failed\n");
+			fprintf(stderr, "CloseHandle(_hwinjob) failed\n");
 		}
 		_hwinjob = NULL;
-	}
-	else
-	{
-		fprintf(stderr, "No job object\n");
 	}
 #endif
 }
