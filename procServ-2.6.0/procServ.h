@@ -131,4 +131,6 @@ private:
     };
 };
 
+void hideWindow();
+
 #endif /* #ifndef procServH */

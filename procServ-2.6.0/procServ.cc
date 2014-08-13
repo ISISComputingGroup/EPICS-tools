@@ -384,7 +384,6 @@ int main(int argc,char * argv[])
 	printUsage();
 	exit(1);
     }
-
     // Single command characters should be ignored, too
     if (ignChars == NULL && (killChar || toggleRestartChar || logoutChar))
         ignChars = (char*) calloc(1 + ONE_CHAR_COMMANDS, 1);
@@ -799,6 +798,8 @@ void forkAndGo()
 
         // Make sure we are not attached to a terminal
         setsid();
+		
+		hideWindow();
     }
 }
 
@@ -894,6 +895,17 @@ void ttySetCharNoEcho(bool set) {
     } else if (saved) {
         tcsetattr(0, TCSANOW, &org_mode);
     }
+}
+
+void hideWindow()
+{
+#ifdef __CYGWIN__
+		HWND conwin = GetConsoleWindow();
+		if ( conwin != NULL )
+		{
+			ShowWindowAsync(conwin, SW_HIDE);
+		}
+#endif
 }
 
 connectionItem * connectionItem::head;

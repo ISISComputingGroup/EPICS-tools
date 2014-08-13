@@ -336,5 +336,5 @@ void processClass::terminateJob()
 		}
 		_hwinjob = NULL;
 	}
-#endif
+#endif /* __CYGWIN__ */
 }
