@@ -6,6 +6,10 @@ class cls:
 
 commentre = re.compile(r"^#(?:[ \t]*#)+([^#])", re.MULTILINE)
 pmccommentre = re.compile(r"^[ \t]*;;([ \t]*[^;#]*)", re.MULTILINE)
+recordre = re.compile(r"^([ \t]*record[^{]*?)$",re.MULTILINE)
+removecb = re.compile(r"^[ \t]*{(.*?)$", re.MULTILINE)
+# alias outside of a recford() will have (a,b) argument
+aliasre = re.compile(r"^([ \t]*alias[^,]*?,[^,]*?)$",re.MULTILINE)
 
 def Input_filter(fname):
     """Doxygen input filter. Take the file fname, and if it is a protocol or 
@@ -19,6 +23,9 @@ def Input_filter(fname):
         print text
     elif fname.endswith(".vdb") or fname.endswith(".template") or fname.endswith(".db"):
         text = open(fname).read()
+        text = re.sub(removecb,r"\1",text)
+        text = re.sub(recordre,r"\1 {",text)
+        text = re.sub(aliasre,r"\1 { }",text)
         # no comments, try making some
         text = re.sub(".*field.*\(.*DESC,.*\"(.*)\".*\)",r"///\c DESC field: \1",text)
         # Make sure double hashed comments are picked up
