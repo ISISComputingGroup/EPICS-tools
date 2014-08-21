@@ -9,7 +9,7 @@ pmccommentre = re.compile(r"^[ \t]*;;([ \t]*[^;#]*)", re.MULTILINE)
 recordre = re.compile(r"^([ \t]*record[^{]*?)$",re.MULTILINE)
 removecb = re.compile(r"^[ \t]*{(.*?)$", re.MULTILINE)
 # alias outside of a recford() will have (a,b) argument
-aliasre = re.compile(r"^([ \t]*alias[^,]*?,[^,]*?)$",re.MULTILINE)
+aliasre = re.compile(r"^([ \t]*alias[^,]*?,.*?)$",re.MULTILINE)
 
 def Input_filter(fname):
     """Doxygen input filter. Take the file fname, and if it is a protocol or 
