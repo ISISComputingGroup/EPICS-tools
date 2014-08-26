@@ -36,6 +36,7 @@ def Input_filter(fname):
         print text
         print
         print r"/** \file"
+        print
         def get_desc(macro):
             return cls.ArgInfo.descriptions[macro].desc.replace("<type 'str'>", "")
 
@@ -45,7 +46,7 @@ def Input_filter(fname):
             print r"\param %s Default=%s. %s" % (macro, default, get_desc(macro))
         for macro in cls.ArgInfo.optional_names:
             print r"\param %s Optional argument. %s" % (macro, get_desc(macro))
-        print r"\n**/"        
+        print "\n*/"        
     elif fname.endswith(".pmc"):
         text = open(fname).read()
         text = re.sub(pmccommentre,r"///\1",text)                
