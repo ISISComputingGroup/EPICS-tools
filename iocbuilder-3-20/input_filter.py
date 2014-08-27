@@ -8,7 +8,8 @@ commentre = re.compile(r"^#(?:[ \t]*#)+([^#])", re.MULTILINE)
 pmccommentre = re.compile(r"^[ \t]*;;([ \t]*[^;#]*)", re.MULTILINE)
 recordre = re.compile(r"^([ \t]*record[^{]*?)$",re.MULTILINE)
 removecb = re.compile(r"^[ \t]*{(.*?)$", re.MULTILINE)
-# alias outside of a recford() will have (a,b) argument
+fieldre = re.compile(r"^([ \t]*field[^,]*?,.*?)$",re.MULTILINE)
+# alias outside of a record() will have (a,b) argument
 aliasre = re.compile(r"^([ \t]*alias[^,]*?,.*?)$",re.MULTILINE)
 
 def Input_filter(fname):
@@ -28,6 +29,7 @@ def Input_filter(fname):
         text = re.sub(aliasre,r"\1 { }",text)
         # no comments, try making some
         text = re.sub(".*field.*\(.*DESC,.*\"(.*)\".*\)",r"///\c DESC field: \1",text)
+        text = re.sub(fieldre,r"\1 ;",text)
         # Make sure double hashed comments are picked up
         text = re.sub(commentre,r"///\1",text)        
         # make a macro list
