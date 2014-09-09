@@ -1,3 +1,4 @@
+@echo off
 set OLDDIR=%CD%
 cd %~dp0
 python input_filter.py %1

@@ -5,12 +5,15 @@ class cls:
     Arguments=None
 
 commentre = re.compile(r"^#(?:[ \t]*#)+([^#])", re.MULTILINE)
+nocommentre = re.compile(r"^#([^#]+?)$", re.MULTILINE)
 pmccommentre = re.compile(r"^[ \t]*;;([ \t]*[^;#]*)", re.MULTILINE)
 recordre = re.compile(r"^([ \t]*record[^{]*?)$",re.MULTILINE)
 removecb = re.compile(r"^[ \t]*{(.*?)$", re.MULTILINE)
 fieldre = re.compile(r"^([ \t]*field[^,]*?,.*?)$",re.MULTILINE)
 # alias outside of a record() will have (a,b) argument
 aliasre = re.compile(r"^([ \t]*alias[^,]*?,.*?)$",re.MULTILINE)
+removeredir = re.compile(r"^([ \t]*<.*?)$", re.MULTILINE)
+matchline = re.compile(r"^(.*?)$", re.MULTILINE)
 
 def Input_filter(fname):
     """Doxygen input filter. Take the file fname, and if it is a protocol or 
@@ -31,7 +34,8 @@ def Input_filter(fname):
         text = re.sub(".*field.*\(.*DESC,.*\"(.*)\".*\)",r"///\c DESC field: \1",text)
         text = re.sub(fieldre,r"\1 ;",text)
         # Make sure double hashed comments are picked up
-        text = re.sub(commentre,r"///\1",text)        
+        text = re.sub(commentre,r"///\1",text)
+        text = re.sub(nocommentre,r"//\1",text)
         # make a macro list
         from iocbuilder.autosubst import populate_class        
         populate_class(cls, fname)
@@ -54,6 +58,13 @@ def Input_filter(fname):
         text = re.sub(pmccommentre,r"///\1",text)                
         text = re.sub(";",r"//",text)                        
         print text        
+    elif fname.endswith(".cmd"):
+        text = open(fname).read()
+        text = re.sub(matchline,r"\1 ;",text)
+        text = re.sub(removeredir,r"// \1",text)
+        text = re.sub(commentre,r"/// \1",text)
+        text = re.sub(nocommentre,r"// \1",text)
+        print text
     else:
         print open(fname).read()           
     
