@@ -32,6 +32,7 @@ def Input_filter(fname):
         text = re.sub(aliasre,r"\1 { }",text)
         # no comments, try making some
         text = re.sub(".*field.*\(.*DESC,.*\"(.*)\".*\)",r"///\c DESC field: \1",text)
+        text = re.sub(".*field.*\(.*EGU,.*\"(.*)\".*\)",r"///\c EGU field: \1",text)
         text = re.sub(fieldre,r"\1 ;",text)
         # Make sure double hashed comments are picked up
         text = re.sub(commentre,r"///\1",text)
