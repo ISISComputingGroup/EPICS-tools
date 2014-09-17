@@ -602,8 +602,11 @@ void SendToAll(const char * message,int count,const connectionItem * sender)
 
     time(&now);
     localtime_r(&now, &now_tm);
-    strftime(stamp, sizeof(stamp)-1, stampFormat, &now_tm);
-    len = strlen(stamp);
+	if (stampLog)
+	{
+        strftime(stamp, sizeof(stamp)-1, stampFormat, &now_tm);
+        len = strlen(stamp);
+	}
     if (now_tm.tm_yday != save_tm_yday)
     {
         openLogFile();  // reopen log file on day change to allow for log file rotation
