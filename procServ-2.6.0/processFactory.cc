@@ -123,6 +123,7 @@ processClass::processClass(char *exe, char *argv[])
     struct rlimit corelimit;
     char buf[128];
 
+#ifdef __CYGWIN__
 	_hwinjob = CreateJobObject(NULL, NULL);
 	if (_hwinjob == NULL)
 	{
@@ -143,6 +144,7 @@ processClass::processClass(char *exe, char *argv[])
 	{
             fprintf(stderr, "QueryInformationJobObject failed\n");
 	}
+#endif /* __CYGWIN__ */
 	
 	
     _pid = forkpty(&_fd, factoryName, NULL, NULL);
@@ -155,6 +157,7 @@ processClass::processClass(char *exe, char *argv[])
         } else {
             PRINTF("Created process %ld on %s\n", (long) _pid, factoryName);
         }
+#ifdef __CYGWIN__
 	    int winpid = cygwin_internal(CW_CYGWIN_PID_TO_WINPID, _pid);
         PRINTF("Created win process %ld on %s\n", (long) winpid, factoryName);
 
@@ -178,6 +181,7 @@ processClass::processClass(char *exe, char *argv[])
 		{
 			fprintf(stderr, "OpenProcess failed for win process %ld\n", (long)winpid);
 		}
+#endif /* __CYGWIN__ */
 
         // Don't start a new one before this time:
         _restartTime = holdoffTime + time(0);
