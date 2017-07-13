@@ -31,4 +31,5 @@ configure.ac eol=lf
 *.jpg binary
 *.class binary
 *.vi binary
-
+*.exe binary
+*.dll binary
