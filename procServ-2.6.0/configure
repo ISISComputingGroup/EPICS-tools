@@ -1377,8 +1377,8 @@ Optional Features:
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --enable-access-from-anywhere
-                          allow unauthenticated access from anywhere (CAVEAT:
-                          opens a security hole!!)
+                          allow unauthenticated access from anywhere \
+                          (CAVEAT: opens a security hole!!)
   --enable-devel          Control build type: debug (enable), release
                           (disable), default (none)
   --disable-doc           Do not install documentation
