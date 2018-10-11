@@ -30,6 +30,8 @@ protected:
     static processClass * _runningItem;
     static time_t _restartTime;
 	void terminateJob();
+	void winkill(int winpid);
+
 #ifdef __CYGWIN__
 	HANDLE _hwinjob;
 #endif /* __CYGWIN__ */

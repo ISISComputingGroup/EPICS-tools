@@ -105,7 +105,9 @@ processClass::~processClass()
     SendToAll( infoMessage3, strlen(infoMessage3), this );
 
                                 // Negative PID sends signal to all members of process group
+//#ifndef __CYGWIN__ /* FAA: check later */
     if ( _pid > 0 ) kill( -_pid, SIGKILL );
+//#endif
 	terminateJob();
 	if ( _fd > 0 ) close( _fd );
     _runningItem = NULL;
@@ -124,6 +126,9 @@ processClass::processClass(char *exe, char *argv[])
     char buf[128];
 
 #ifdef __CYGWIN__
+	// we can only be a member of one job object in windows 7 and below, so we put the child in the job
+	// object to control termination of any process it spawns. If the parent exits, as we have set the job object
+	// to kill on close it should also exit the child so we don't need to use nested job objects
 	_hwinjob = CreateJobObject(NULL, NULL);
 	if (_hwinjob == NULL)
 	{
@@ -309,9 +314,11 @@ void processFactorySendSignal(int signal)
 {
     if (processClass::_runningItem)
     {
+//#ifndef __CYGWIN__ /* FAA: check later */
 	PRINTF("Sending signal %d to pid %ld\n",
 		signal, (long) processClass::_runningItem->_pid);
 	kill(-processClass::_runningItem->_pid,signal);
+//#endif
 	if (signal == killSig)
 	{
 	    processClass::_runningItem->terminateJob();
@@ -330,6 +337,9 @@ void processClass::terminateJob()
 #ifdef __CYGWIN__
 	if (_hwinjob != NULL)
 	{
+		int winpid = cygwin_internal(CW_CYGWIN_PID_TO_WINPID, processClass::_runningItem->_pid);
+	    PRINTF("Terminating cygwin pid %ld (win pid %ld)\n", (long)processClass::_runningItem->_pid, (long)winpid);
+//		winkill(winpid); // terminating job object should be enough
 	    if (TerminateJobObject(_hwinjob, 1) == 0)
 		{
 			fprintf(stderr, "TerminateJobObject failed\n");
@@ -342,3 +352,26 @@ void processClass::terminateJob()
 	}
 #endif /* __CYGWIN__ */
 }
+
+void processClass::winkill(int winpid)
+{
+#ifdef __CYGWIN__
+	HANDLE hprocess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, winpid);
+	if (hprocess != NULL)
+	{
+	    if (TerminateProcess(hprocess, 1) == 0)
+		{
+			fprintf(stderr, "TerminateProcess failed\n");			
+		}
+		if (CloseHandle(hprocess) == 0)
+		{
+			fprintf(stderr, "CloseHandle(hprocess) failed\n");			
+		}
+	}
+	else
+	{
+		fprintf(stderr, "OpenProcess failed\n");		
+	}
+#endif /* __CYGWIN__ */
+}
+
