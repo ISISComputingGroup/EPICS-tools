@@ -7,29 +7,5 @@
 *.cpp text
 *.h text
 *.hpp text
-*.java text
-*.bat text
-*.cmd text
-*.db text
-*.dbd text
-*.template text
-*.substitutions text
-
-# for cygwin
 *.sh text eol=lf
-config.sub eol=lf
-config.guess eol=lf
-configure eol=lf
-configure.in eol=lf
-configure.ac eol=lf
 
-# Declare files that will always have CRLF line endings on checkout.
-*.sln text eol=crlf
-
-# Denote all files that are truly binary and should not be modified.
-*.png binary
-*.jpg binary
-*.class binary
-*.vi binary
-*.exe binary
-*.dll binary
