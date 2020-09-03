@@ -19,6 +19,7 @@ config.log
 config.status
 *~
 conserver-8.1.19/Makefile
+conserver-8.1.19/configure
 conserver-8.1.19/autologin/Makefile
 conserver-8.1.19/config.h
 conserver-8.1.19/conserver.cf/Makefile
@@ -30,5 +31,9 @@ conserver-8.1.19/console/Makefile
 conserver-8.1.19/console/console.exe
 conserver-8.1.19/contrib/chat/Makefile
 procServ-2.6.0/Makefile
+procServ-2.6.0/Makefile.in
+procServ-2.6.0/configure
+procServ-2.6.0/build-aux/
+procServ-2.6.0/Makefile.in
 procServ-2.6.0/procServ.exe
 procServ-2.6.0/procServ.map
