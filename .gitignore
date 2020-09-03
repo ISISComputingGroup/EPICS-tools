@@ -31,7 +31,6 @@ conserver-8.1.19/console/Makefile
 conserver-8.1.19/console/console.exe
 conserver-8.1.19/contrib/chat/Makefile
 procServ-2.6.0/Makefile
-procServ-2.6.0/Makefile.in
 procServ-2.6.0/configure
 procServ-2.6.0/build-aux/
 procServ-2.6.0/Makefile.in
