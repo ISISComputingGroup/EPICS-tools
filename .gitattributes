@@ -8,4 +8,4 @@
 *.h text
 *.hpp text
 *.sh text eol=lf
-
+*.exe binary
