@@ -7,5 +7,13 @@
 *.cpp text
 *.h text
 *.hpp text
-*.sh text eol=lf
 *.exe binary
+*.dll binary
+
+# for cygwin
+*.sh text eol=lf
+*.in text eol=lf
+config.sub text eol=lf
+config.guess text eol=lf
+configure text eol=lf
+configure.ac text eol=lf
