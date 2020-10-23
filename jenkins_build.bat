@@ -10,3 +10,4 @@ robocopy "cygwin_bin" "\\isis\inst$\Kits$\CompGroup\ICP\EPICS_Tools\cygwin_bin" 
 if %ERRORLEVEL% GEQ 4 exit /b %ERRORLEVEL%
 robocopy "cygwin_bin64" "\\isis\inst$\Kits$\CompGroup\ICP\EPICS_Tools\cygwin_bin64" /E /PURGE /NFL /NDL /NP
 if %ERRORLEVEL% GEQ 4 exit /b %ERRORLEVEL%
+exit /b 0
