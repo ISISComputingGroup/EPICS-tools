@@ -4,6 +4,7 @@ autoreconf -fvi
 sh configure
 make clean
 make
+mkdir -p ../cygwin_bin ../cygwin_bin64
 cp -f procServ.exe ../cygwin_bin
 cp -f procServ.exe ../cygwin_bin64
 cp -f /usr/bin/kill.exe ../cygwin_bin/cygwin_kill.exe
