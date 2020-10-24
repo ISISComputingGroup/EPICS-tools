@@ -5,6 +5,9 @@ O.*/
 /include
 /lib
 /templates
+/cygwin_bin/
+/cygwin_bin32/
+/cygwin_bin64/
 envPaths
 cdCommands
 dllPath.bat

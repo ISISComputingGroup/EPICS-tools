@@ -7,3 +7,5 @@ cp -f conserver/conserver.exe ../cygwin_bin
 cp -f conserver/conserver.exe ../cygwin_bin64
 cp -f console/console.exe ../cygwin_bin
 cp -f console/console.exe ../cygwin_bin64
+cp -f conserver.cf/samples/basic.cf ../cygwin_bin
+cp -f conserver.cf/samples/basic.cf ../cygwin_bin64
