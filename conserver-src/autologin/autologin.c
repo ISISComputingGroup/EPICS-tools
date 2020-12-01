@@ -75,9 +75,10 @@ int iGrps = 0;
 /*
  * External variables
  */
-
+#ifndef __CYGWIN__
 extern int optind;
 extern char *optarg;
+#endif /* __CYGWIN */
 
 void make_utmp();
 void usage();
@@ -393,7 +394,9 @@ Process(void)
 #endif
 
     if (fMakeUtmp) {
+#ifndef __CYGWIN__
 	extern char *ttyname();
+#endif /* __CYGWIN__ */
 	make_utmp(pcLogin, (char *)0 != pcTty ? pcTty : ttyname(0));
     }
     /* Change ownership and modes on the tty.

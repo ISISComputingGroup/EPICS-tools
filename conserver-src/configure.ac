@@ -359,6 +359,12 @@ AC_TRY_COMPILE([#include <sys/types.h>
 dnl ### Host specific checks. ######################################
 AC_CANONICAL_HOST
 
+## no longer works on cygwin if we want ssl
+#if test "$host_os" = "cygwin"; then
+#    LDFLAGS="$LDFLAGS -static"
+#	AC_MSG_RESULT("Enabling static linking")
+#fi
+
 case "$host" in
 *-*-hpux*)
     CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE_EXTENDED=1"
@@ -551,7 +557,7 @@ AC_ARG_WITH(openssl,
 	LDFLAGS="$LDFLAGS $OPENSSLLDFLAGS"
 
 	AC_CHECK_HEADER([openssl/ssl.h],
-	    [LIBS="$LIBS -lssl -lcrypto"
+	    [LIBS="$LIBS -lssl -lcrypto -lz"
 	    AC_MSG_CHECKING(for openssl libraries -lssl and -lcrypto)
 	    AC_TRY_LINK([#include <openssl/ssl.h>
 		],[SSL_CTX_new(NULL)],

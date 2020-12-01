@@ -1228,8 +1228,10 @@ main(int argc, char **argv)
     int i;
     FILE *fpConfig = (FILE *)0;
     static char acOpts[] = "7a:b:c:C:dDEFhiL:m:M:noO:p:P:RSuU:Vv";
+#ifndef __CYGWIN__
     extern int optopt;
     extern char *optarg;
+#endif /* __CYGWIN */
     struct passwd *pwd;
     char *origuser = (char *)0;
     char *curuser = (char *)0;

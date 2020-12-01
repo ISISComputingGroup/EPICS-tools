@@ -44,6 +44,7 @@
 # include <netdb.h>
 #endif
 
+#include "setconsoletitle.h"
 
 int fReplay = 0, fVersion = 0;
 int showExecData = 1;
@@ -845,7 +846,6 @@ ExecCmd(void)
 {
     int i;
     pid_t iNewGrp;
-    extern char **environ;
     int pin[2];
     int pout[2];
     static char *apcArgv[] = {
@@ -1912,14 +1912,17 @@ main(int argc, char **argv)
     static STRING *acPorts = (STRING *)0;
     static char acOpts[] =
 	"7aAb:B:c:C:d:De:EfFhikIl:M:np:PqQrRsSt:uUvVwWxz:Z:";
+#ifndef __CYGWIN__
     extern int optind;
     extern int optopt;
     extern char *optarg;
+#endif /* __CYGWIN__ */
     static STRING *textMsg = (STRING *)0;
     int cmdi;
     static STRING *consoleName = (STRING *)0;
     short readSystemConf = 1;
     char *userConf = (char *)0;
+    char console_title[256];
     typedef struct zaps {
 	char *opt;
 	char *cmd;
@@ -2359,7 +2362,12 @@ main(int argc, char **argv)
 	if (cmdarg != (char *)0)
 	    free(cmdarg);
 	if ((cmdarg = StrDup(argv[optind++])) == (char *)0)
+	  {
 	    OutOfMem();
+	  }
+      snprintf(console_title, sizeof(console_title), "Console: %s@%s", cmdarg, config->master); /* (config->username != NULL ? config->username : "") */
+	  console_title[sizeof(console_title)-1] = '\0';
+	  set_console_title(console_title);	  
     } else if (*pcCmd == 'i' || *pcCmd == 'e' || *pcCmd == 'h' ||
 	       *pcCmd == 'g') {
 	/* info, e(x)amine, hosts (u), groups (w) */

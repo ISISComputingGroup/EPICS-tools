@@ -366,7 +366,9 @@ StartInit(CONSENT *pCE)
 {
     int i;
     pid_t iNewGrp;
+#ifndef __CYGWIN__
     extern char **environ;
+#endif
     int pin[2];
     int pout[2];
     static char *apcArgv[] = {
@@ -561,7 +563,9 @@ VirtDev(CONSENT *pCE)
 {
     int i;
     pid_t iNewGrp;
+#ifndef __CYGWIN__
     extern char **environ;
+#endif
     char *pcShell, **ppcArgv;
 
     fflush(stdout);

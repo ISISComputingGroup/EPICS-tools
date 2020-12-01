@@ -116,7 +116,9 @@ main(int argc, char **argv)
     static int
       u_loop = 0;
     register int u_curopt;
+#ifndef __CYGWIN__
     extern int atoi();
+#endif /* __CYGWIN__ */
 
     progname = strrchr(argv[0], '/');
     if ((char *)0 == progname)

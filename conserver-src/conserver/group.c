@@ -1746,7 +1746,6 @@ static int
 StartTask(CONSENT *pCE, char *cmd, uid_t uid, gid_t gid)
 {
     int i;
-    extern char **environ;
     char *pcShell, **ppcArgv;
     extern int FallBack(char **, int *);
     char *execSlave = (char *)0;	/* pseudo-device slave side             */
