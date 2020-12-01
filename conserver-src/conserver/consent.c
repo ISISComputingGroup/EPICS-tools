@@ -1,6 +1,4 @@
 /*
- *  $Id: consent.c,v 5.153 2013/09/26 17:32:54 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -88,37 +86,37 @@ BAUD baud[] = {
     {"3500000", 32},
     {"4000000", 33},
 #else /* FOR_CYCLADES_TS */
-#if defined(B115200)
+# if defined(B115200)
     {"115200", B115200},
-#endif
-#if defined(B57600)
+# endif
+# if defined(B57600)
     {"57600", B57600},
-#endif
-#if defined(B38400)
+# endif
+# if defined(B38400)
     {"38400", B38400},
-#endif
-#if defined(B19200)
+# endif
+# if defined(B19200)
     {"19200", B19200},
-#endif
-#if defined(B9600)
+# endif
+# if defined(B9600)
     {"9600", B9600},
-#endif
-#if defined(B4800)
+# endif
+# if defined(B4800)
     {"4800", B4800},
-#endif
-#if defined(B2400)
+# endif
+# if defined(B2400)
     {"2400", B2400},
-#endif
-#if defined(B1800)
+# endif
+# if defined(B1800)
     {"1800", B1800},
-#endif
+# endif
     {"1200", B1200},
-#if defined(B600)
+# if defined(B600)
     {"600", B600},
-#endif
-#if defined(B300)
+# endif
+# if defined(B300)
     {"300", B300},
-#endif
+# endif
 #endif /* FOR_CYCLADES_TS */
 };
 
@@ -126,12 +124,7 @@ BAUD baud[] = {
 /* find a baud rate for the string "9600x" -> B9600			(ksb)
  */
 BAUD *
-#if PROTOTYPES
 FindBaud(char *pcMode)
-#else
-FindBaud(pcMode)
-    char *pcMode;
-#endif
 {
     int i;
 
@@ -143,9 +136,9 @@ FindBaud(pcMode)
 }
 
 
-# if !defined(PAREXT)
-#  define PAREXT	0
-# endif
+#if !defined(PAREXT)
+# define PAREXT	0
+#endif
 struct parity parity[] = {
     {"even", PARENB | CS7, 0},
     {"mark", PARENB | CS7 | PARODD | PAREXT, 0},
@@ -157,12 +150,7 @@ struct parity parity[] = {
 /* find a parity "even" or "E" or "ev" -> EVEN
  */
 PARITY *
-#if PROTOTYPES
 FindParity(char *pcMode)
-#else
-FindParity(pcMode)
-    char *pcMode;
-#endif
 {
     int i;
 
@@ -177,12 +165,7 @@ FindParity(pcMode)
 /* setup a tty device							(ksb)
  */
 static int
-#if PROTOTYPES
 TtyDev(CONSENT *pCE)
-#else
-TtyDev(pCE)
-    CONSENT *pCE;
-#endif
 {
     struct termios termp;
     struct stat stPerm;
@@ -290,25 +273,20 @@ TtyDev(pCE)
 	}
 #endif
     }
-# if HAVE_STROPTS_H
+#if HAVE_STROPTS_H
     /*
      * eat all the streams modules upto and including ttcompat
      */
     while (ioctl(cofile, I_FIND, "ttcompat") == 1) {
 	ioctl(cofile, I_POP, 0);
     }
-# endif
+#endif
     pCE->fup = 1;
     return 0;
 }
 
 void
-#if PROTOTYPES
 StopInit(CONSENT *pCE)
-#else
-StopInit(pCE)
-    CONSENT *pCE;
-#endif
 {
     if (pCE->initcmd == (char *)0)
 	return;
@@ -339,17 +317,56 @@ StopInit(pCE)
     }
 }
 
+#if HAVE_FREEIPMI
+ipmiconsole_ctx_t
+IpmiSOLCreate(CONSENT *pCE)
+{
+    ipmiconsole_ctx_t ctx;
+    struct ipmiconsole_ipmi_config ipmi;
+    struct ipmiconsole_protocol_config protocol;
+    struct ipmiconsole_engine_config engine;
+
+    if (ipmiconsole_engine_init(1, 0) < 0)
+	return 0;
+
+    ipmi.username = pCE->username;
+    ipmi.password = pCE->password;
+    if (pCE->ipmikg->used <= 1) {	/* 1 == NULL only */
+	ipmi.k_g = NULL;
+	ipmi.k_g_len = 0;
+    } else {
+	ipmi.k_g = (unsigned char *)pCE->ipmikg->string;
+	ipmi.k_g_len = pCE->ipmikg->used - 1;
+    }
+    ipmi.privilege_level = pCE->ipmiprivlevel;
+    ipmi.cipher_suite_id = pCE->ipmiciphersuite;
+    ipmi.workaround_flags = pCE->ipmiworkaround;
+
+    protocol.session_timeout_len = -1;
+    protocol.retransmission_timeout_len = -1;
+    protocol.retransmission_backoff_count = -1;
+    protocol.keepalive_timeout_len = -1;
+    protocol.retransmission_keepalive_timeout_len = -1;
+    protocol.acceptable_packet_errors_count = -1;
+    protocol.maximum_retransmission_count = -1;
+
+    engine.engine_flags = IPMICONSOLE_ENGINE_OUTPUT_ON_SOL_ESTABLISHED;
+    engine.behavior_flags = 0;
+    engine.debug_flags = 0;
+
+    ctx = ipmiconsole_ctx_create(pCE->host, &ipmi, &protocol, &engine);
+
+    return ctx;
+}
+#endif
+
 /* invoke the initcmd command */
 void
-#if PROTOTYPES
 StartInit(CONSENT *pCE)
-#else
-StartInit(pCE)
-    CONSENT *pCE;
-#endif
 {
     int i;
     pid_t iNewGrp;
+    extern char **environ;
     int pin[2];
     int pout[2];
     static char *apcArgv[] = {
@@ -437,24 +454,32 @@ StartInit(pCE)
 
     /* setup new process with clean file descriptors
      */
+#if HAVE_CLOSEFROM
+    for (i = 3; i <= pout[0] || i <= pin[1]; i++) {
+	if (i != pout[0] && i != pin[1])
+	    close(i);
+    }
+    closefrom(i);
+#else
     i = GetMaxFiles();
     for ( /* i above */ ; --i > 2;) {
 	if (i != pout[0] && i != pin[1])
 	    close(i);
     }
+#endif
     /* leave 2 until we have to close it */
     close(1);
     close(0);
 
-# if HAVE_SETSID
+#if HAVE_SETSID
     iNewGrp = setsid();
     if (-1 == iNewGrp) {
 	Error("[%s] setsid(): %s", pCE->server, strerror(errno));
 	iNewGrp = getpid();
     }
-# else
+#else
     iNewGrp = getpid();
-# endif
+#endif
 
     if (dup(pout[0]) != 0 || dup(pin[1]) != 1) {
 	Error("[%s] StartInit(): fd sync error", pCE->server);
@@ -485,17 +510,11 @@ StartInit(pCE)
 
 /* We exit() here, so only call this in a child process before an exec() */
 void
-#if PROTOTYPES
 SetupTty(CONSENT *pCE, int fd)
-#else
-SetupTty(pCE, fd)
-    CONSENT *pCE;
-    int fd;
-#endif
 {
     struct termios n_tio;
 
-# if HAVE_STROPTS_H  && !defined(_AIX)
+#if HAVE_STROPTS_H  && !defined(_AIX)
     /* SYSVr4 semantics for opening stream ptys                     (gregf)
      * under PTX (others?) we have to push the compatibility
      * streams modules `ptem', `ld', and `ttcompat'
@@ -503,7 +522,7 @@ SetupTty(pCE, fd)
     ioctl(1, I_PUSH, "ptem");
     ioctl(1, I_PUSH, "ldterm");
     ioctl(1, I_PUSH, "ttcompat");
-# endif
+#endif
 
     if (0 != tcgetattr(1, &n_tio)) {
 	exit(EX_OSERR);
@@ -538,15 +557,11 @@ SetupTty(pCE, fd)
 /* setup a virtual device						(ksb)
  */
 static int
-#if PROTOTYPES
 VirtDev(CONSENT *pCE)
-#else
-VirtDev(pCE)
-    CONSENT *pCE;
-#endif
 {
     int i;
     pid_t iNewGrp;
+    extern char **environ;
     char *pcShell, **ppcArgv;
 
     fflush(stdout);
@@ -585,25 +600,32 @@ VirtDev(pCE)
 
     /* setup new process with clean filew descriptors
      */
+#if HAVE_CLOSEFROM
+    for (i = 3; i < pCE->execSlaveFD; i++)
+	close(i);
+    i++;
+    closefrom(i);
+#else
     i = GetMaxFiles();
     for ( /* i above */ ; --i > 2;) {
 	if (i != pCE->execSlaveFD)
 	    close(i);
     }
+#endif
     /* leave 2 until we *have to close it*
      */
     close(1);
     close(0);
 
-# if HAVE_SETSID
+#if HAVE_SETSID
     iNewGrp = setsid();
     if (-1 == iNewGrp) {
 	Error("[%s] setsid(): %s", pCE->server, strerror(errno));
 	iNewGrp = getpid();
     }
-# else
+#else
     iNewGrp = getpid();
-# endif
+#endif
 
     if (dup(pCE->execSlaveFD) != 0 || dup(pCE->execSlaveFD) != 1) {
 	Error("[%s] fd sync error", pCE->server);
@@ -657,12 +679,7 @@ VirtDev(pCE)
 }
 
 char *
-#if PROTOTYPES
 ConsState(CONSENT *pCE)
-#else
-ConsState(pCE)
-    CONSENT *pCE;
-#endif
 {
     if (!pCE->fup)
 	return "down";
@@ -683,6 +700,10 @@ ConsState(pCE)
 	case INSSLSHUTDOWN:
 	    return "SSL_shutdown";
 #endif
+#if HAVE_GSSAPI
+	case INGSSACCEPT:
+	    return "GSSAPI_accept";
+#endif
 	case ISFLUSHING:
 	    return "flushing";
     }
@@ -697,14 +718,7 @@ ConsState(pCE)
  * with the "runtime" members of the structure here.
  */
 void
-#if PROTOTYPES
 ConsDown(CONSENT *pCE, FLAG downHard, FLAG force)
-#else
-ConsDown(pCE, downHard, force)
-    CONSENT *pCE;
-    FLAG downHard;
-    FLAG force;
-#endif
 {
     if (force != FLAGTRUE &&
 	!(FileBufEmpty(pCE->fdlog) && FileBufEmpty(pCE->cofile) &&
@@ -726,6 +740,14 @@ ConsDown(pCE, downHard, force)
 	FD_CLR(cofile, &winit);
 	FileClose(&pCE->cofile);
     }
+#if HAVE_FREEIPMI
+    /* need to do this after cofile close above as
+     * ipmiconsole_ctx_destroy will close the fd */
+    if (pCE->ipmictx != (ipmiconsole_ctx_t) 0) {
+	ipmiconsole_ctx_destroy(pCE->ipmictx);
+	pCE->ipmictx = (ipmiconsole_ctx_t) 0;
+    }
+#endif
     if (pCE->fdlog != (CONSFILE *)0) {
 	if (pCE->nolog) {
 	    TagLogfile(pCE, "Console logging restored");
@@ -753,15 +775,10 @@ ConsDown(pCE, downHard, force)
  * We also maintian the select set for the caller.
  */
 void
-#if PROTOTYPES
 ConsInit(CONSENT *pCE)
-#else
-ConsInit(pCE)
-    CONSENT *pCE;
-#endif
 {
     time_t tyme;
-    extern int FallBack PARAMS((char **, int *));
+    extern int FallBack(char **, int *);
     int cofile = -1;
     int ret;
 #if HAVE_GETTIMEOFDAY
@@ -803,7 +820,7 @@ ConsInit(pCE)
      */
     if (pCE->fup) {
 	ConsDown(pCE, FLAGFALSE, FLAGTRUE);
-	usleep(250000);		/* pause 0.25 sec to let things settle a bit */
+	Sleep(250000);
     }
 
     pCE->autoReUp = 0;
@@ -856,19 +873,86 @@ ConsInit(pCE)
 	    break;
 	case HOST:
 	    {
+#if USE_IPV6
+		int error;
+		char host[NI_MAXHOST];
+		char serv[NI_MAXSERV];
+		struct addrinfo *ai, *rp, hints;
+#else
 		struct sockaddr_in port;
 		struct hostent *hp;
+#endif /* USE_IPV6 */
 #if HAVE_SETSOCKOPT
 		int one = 1;
 #endif
+		Sleep(100000);	/* Not all terminal servers can keep up */
 
-		usleep(100000);	/* Not all terminal servers can keep up */
+#if USE_IPV6
+# if HAVE_MEMSET
+		memset(&hints, 0, sizeof(hints));
+# else
+		bzero(&hints, sizeof(hints));
+# endif
 
-#if HAVE_MEMSET
-		memset((void *)&port, 0, sizeof(port));
+		hints.ai_flags = AI_ADDRCONFIG;
+		hints.ai_socktype = SOCK_STREAM;
+		snprintf(serv, sizeof(serv), "%hu", pCE->netport);
+
+		error = getaddrinfo(pCE->host, serv, &hints, &ai);
+		if (error) {
+		    Error("[%s] getaddrinfo(%s): %s: forcing down",
+			  pCE->server, pCE->host, gai_strerror(error));
+		    ConsDown(pCE, FLAGTRUE, FLAGTRUE);
+		    return;
+		}
+
+		rp = ai;
+		while (rp) {
+		    error =
+			getnameinfo(rp->ai_addr, rp->ai_addrlen, host,
+				    sizeof(host), serv, sizeof(serv),
+				    NI_NUMERICHOST | NI_NUMERICSERV);
+		    if (error)
+			continue;
+		    CONDDEBUG((1,
+			       "[%s]: trying hostname=%s, ip=%s, port=%s",
+			       pCE->server, pCE->host, host, serv));
+
+		    cofile =
+			socket(rp->ai_family, rp->ai_socktype,
+			       rp->ai_protocol);
+		    if (cofile != -1) {
+# if HAVE_SETSOCKOPT
+			if (setsockopt
+			    (cofile, SOL_SOCKET, SO_KEEPALIVE,
+			     (char *)&one, sizeof(one)) < 0)
+			    goto fail;
+# endif
+			if (!SetFlags(cofile, O_NONBLOCK, 0))
+			    goto fail;
+
+			ret = connect(cofile, rp->ai_addr, rp->ai_addrlen);
+			if (ret == 0 || errno == EINPROGRESS)
+			    goto success;
+
+		      fail:
+			close(cofile);
+		    }
+		    rp = rp->ai_next;
+		}
+
+		Error("[%s]: Unable to connect to %s:%s", pCE->server,
+		      host, serv);
+		ConsDown(pCE, FLAGTRUE, FLAGTRUE);
+		return;
+	      success:
+		freeaddrinfo(ai);
 #else
+# if HAVE_MEMSET
+		memset((void *)&port, 0, sizeof(port));
+# else
 		bzero((char *)&port, sizeof(port));
-#endif
+# endif
 
 		if ((hp = gethostbyname(pCE->host)) == NULL) {
 		    Error("[%s] gethostbyname(%s): %s: forcing down",
@@ -876,13 +960,13 @@ ConsInit(pCE)
 		    ConsDown(pCE, FLAGTRUE, FLAGTRUE);
 		    return;
 		}
-#if HAVE_MEMCPY
+# if HAVE_MEMCPY
 		memcpy(&port.sin_addr.s_addr, hp->h_addr_list[0],
 		       hp->h_length);
-#else
+# else
 		bcopy(hp->h_addr_list[0], &port.sin_addr.s_addr,
 		      hp->h_length);
-#endif
+# endif
 		port.sin_family = hp->h_addrtype;
 		port.sin_port = htons(pCE->netport);
 
@@ -893,7 +977,7 @@ ConsInit(pCE)
 		    ConsDown(pCE, FLAGTRUE, FLAGTRUE);
 		    return;
 		}
-#if HAVE_SETSOCKOPT
+# if HAVE_SETSOCKOPT
 		if (setsockopt
 		    (cofile, SOL_SOCKET, SO_KEEPALIVE, (char *)&one,
 		     sizeof(one)) < 0) {
@@ -904,7 +988,7 @@ ConsInit(pCE)
 		    close(cofile);
 		    return;
 		}
-#endif
+# endif
 
 		if (!SetFlags(cofile, O_NONBLOCK, 0)) {
 		    ConsDown(pCE, FLAGTRUE, FLAGTRUE);
@@ -924,6 +1008,7 @@ ConsInit(pCE)
 			return;
 		    }
 		}
+#endif /* USE_IPV6 */
 	    }
 	    if ((pCE->cofile =
 		 FileOpenFD(cofile, simpleSocket)) == (CONSFILE *)0) {
@@ -1037,6 +1122,56 @@ ConsInit(pCE)
 	    TtyDev(pCE);
 	    pCE->ioState = ISNORMAL;
 	    break;
+
+#if HAVE_FREEIPMI
+	case IPMI:
+	    if (!(pCE->ipmictx = IpmiSOLCreate(pCE))) {
+		Error("[%s] Could not create IPMI context: forcing down",
+		      pCE->server);
+		ConsDown(pCE, FLAGTRUE, FLAGTRUE);
+		return;
+	    }
+
+	    if (ipmiconsole_engine_submit(pCE->ipmictx, NULL, NULL) < 0) {
+		Error
+		    ("[%s] Could not connect to IPMI host `%s': forcing down",
+		     pCE->server, pCE->host);
+		ConsDown(pCE, FLAGTRUE, FLAGTRUE);
+		return;
+	    }
+
+	    cofile = ipmiconsole_ctx_fd(pCE->ipmictx);
+	    if (!SetFlags(cofile, O_NONBLOCK, 0)) {
+		ConsDown(pCE, FLAGTRUE, FLAGTRUE);
+		return;
+	    }
+
+	    if ((pCE->cofile =
+		 FileOpenFD(cofile, simpleFile)) == (CONSFILE *)0) {
+		Error("[%s] FileOpenFD(simpleFile) failed: forcing down",
+		      pCE->server);
+		ConsDown(pCE, FLAGTRUE, FLAGTRUE);
+		return;
+	    }
+
+	    if (ipmiconsole_ctx_status(pCE->ipmictx) ==
+		IPMICONSOLE_CTX_STATUS_SOL_ESTABLISHED) {
+		/* Read in the NULL from OUTPUT_ON_SOL_ESTABLISHED flag */
+		char b[1];
+		FileRead(pCE->cofile, b, 1);	/* trust it's NULL */
+		pCE->ioState = ISNORMAL;
+		pCE->stateTimer = 0;
+	    } else {
+		/* Error status cases will be handled in Kiddie() */
+		pCE->ioState = INCONNECT;
+		pCE->stateTimer = time((time_t *)0) + CONNECTTIMEOUT;
+		if (timers[T_STATE] == (time_t)0 ||
+		    timers[T_STATE] > pCE->stateTimer)
+		    timers[T_STATE] = pCE->stateTimer;
+	    }
+	    pCE->fup = 1;
+	    break;
+#endif
     }
 
     if (!pCE->fup) {
@@ -1055,6 +1190,11 @@ ConsInit(pCE)
 	    Verbose("[%s] port %hu on %s", pCE->server, pCE->netport,
 		    pCE->host);
 	    break;
+#if HAVE_FREEIPMI
+	case IPMI:
+	    Verbose("[%s] on %s", pCE->server);
+	    break;
+#endif
 	case NOOP:
 	    Verbose("[%s] noop", pCE->server);
 	    break;
@@ -1071,7 +1211,12 @@ ConsInit(pCE)
 	/* if we're waiting for connect() to finish, watch the
 	 * write bit, otherwise watch for the read bit
 	 */
-	if (pCE->ioState == INCONNECT)
+	if (pCE->ioState == INCONNECT
+#if HAVE_FREEIPMI
+	    /* We wait for read() with the libipmiconsole */
+	    && pCE->type != IPMI
+#endif
+	    )
 	    FD_SET(cofile, &winit);
 	else
 	    FD_SET(cofile, &rinit);
@@ -1120,48 +1265,93 @@ ConsInit(pCE)
 }
 
 int
-#if PROTOTYPES
 AddrsMatch(char *addr1, char *addr2)
-#else
-AddrsMatch(addr1, addr2)
-    char *addr1;
-    char *addr2;
-#endif
 {
+#if USE_IPV6
+    int error, ret = 0;
+    struct addrinfo *ai1, *ai2, hints;
+#else
     /* so, since we might use inet_addr, we're going to use
      * (in_addr_t)(-1) as a sign of an invalid ip address.
      * sad, but true.
      */
     in_addr_t inAddr1 = (in_addr_t) (-1);
     in_addr_t inAddr2 = (in_addr_t) (-1);
-#if HAVE_INET_ATON
+# if HAVE_INET_ATON
     struct in_addr inetAddr1;
     struct in_addr inetAddr2;
-#endif
+# endif
+#endif /* USE_IPV6 */
 
     /* first try simple character string match */
     if (strcasecmp(addr1, addr2) == 0)
 	return 1;
 
+#if USE_IPV6
+# if HAVE_MEMSET
+    memset(&hints, 0, sizeof(hints));
+# else
+    bzero(&hints, sizeof(hints));
+# endif
+    hints.ai_flags = AI_ADDRCONFIG;
+    hints.ai_socktype = SOCK_STREAM;
+
+    error = getaddrinfo(addr1, NULL, &hints, &ai1);
+    if (error) {
+	Error("getaddrinfo(%s): %s", addr1, gai_strerror(error));
+	goto done;
+    }
+    error = getaddrinfo(addr2, NULL, &hints, &ai2);
+    if (error) {
+	Error("getaddrinfo(%s): %s", addr2, gai_strerror(error));
+	goto done;
+    }
+
+    for (; ai1 != NULL; ai1 = ai1->ai_next) {
+	for (; ai2 != NULL; ai2 = ai2->ai_next) {
+	    if (ai1->ai_addr->sa_family != ai2->ai_addr->sa_family)
+		continue;
+
+	    if (
+# if HAVE_MEMCMP
+		   memcmp(&ai1->ai_addr, &ai2->ai_addr,
+			  sizeof(struct sockaddr_storage))
+# else
+		   bcmp(&ai1->ai_addr, &ai2->ai_addr,
+			sizeof(struct sockaddr_storage))
+# endif
+		   == 0) {
+		ret = 1;
+		goto done;
+	    }
+	}
+    }
+
+  done:
+    freeaddrinfo(ai1);
+    freeaddrinfo(ai2);
+    Msg("compare %s and %s returns %d", addr1, addr2, ret);
+    return ret;
+#else
     /* now try ip address match (could have leading zeros or something) */
-#if HAVE_INET_ATON
+# if HAVE_INET_ATON
     if (inet_aton(addr1, &inetAddr1) != 0)
 	inAddr1 = inetAddr1.s_addr;
     if (inet_aton(addr2, &inetAddr2) != 0)
 	inAddr2 = inetAddr2.s_addr;
-#else
+# else
     inAddr1 = inet_addr(addr1);
     inAddr2 = inet_addr(addr2);
-#endif
+# endif
 
     /* if both are ip addresses, we just match */
     if (inAddr1 != (in_addr_t) (-1) && inAddr2 != (in_addr_t) (-1))
 	return !
-#if HAVE_MEMCMP
+# if HAVE_MEMCMP
 	    memcmp(&inAddr1, &inAddr2, sizeof(inAddr1))
-#else
+# else
 	    bcmp(&inAddr1, &inAddr2, sizeof(inAddr1))
-#endif
+# endif
 	    ;
 
     /* both are hostnames...this sucks 'cause we have to copy one
@@ -1189,11 +1379,11 @@ AddrsMatch(addr1, addr2)
 	if (addrs == (in_addr_t *) 0)
 	    OutOfMem();
 	for (i = 0; i < c; i++) {
-#if HAVE_MEMCPY
+# if HAVE_MEMCPY
 	    memcpy(&(addrs[i]), he->h_addr_list[i], he->h_length);
-#else
+# else
 	    bcopy(he->h_addr_list[i], &(addrs[i]), he->h_length);
-#endif
+# endif
 	}
 
 	/* now process the second hostname */
@@ -1213,12 +1403,12 @@ AddrsMatch(addr1, addr2)
 	for (j = 0; he->h_addr_list[j] != (char *)0; j++) {
 	    for (i = 0; i < c; i++) {
 		if (
-#if HAVE_MEMCMP
+# if HAVE_MEMCMP
 		       memcmp(&(addrs[i]), he->h_addr_list[j],
 			      he->h_length)
-#else
+# else
 		       bcmp(&(addrs[i]), he->h_addr_list[j], he->h_length)
-#endif
+# endif
 		       == 0) {
 		    free(addrs);
 		    return 1;
@@ -1252,28 +1442,24 @@ AddrsMatch(addr1, addr2)
 	}
 	for (i = 0; he->h_addr_list[i] != (char *)0; i++) {
 	    if (
-#if HAVE_MEMCMP
+# if HAVE_MEMCMP
 		   memcmp(iaddr, he->h_addr_list[i], he->h_length)
-#else
+# else
 		   bcmp(iaddr, he->h_addr_list[i], he->h_length)
-#endif
+# endif
 		   == 0)
 		return 1;
 	}
     }
     return 0;
+#endif /* USE_IPV6 */
 }
 
 /* thread ther list of uniq console server machines, aliases for	(ksb)
  * machines will screw us up
  */
 REMOTE *
-#if PROTOTYPES
 FindUniq(REMOTE *pRCAll)
-#else
-FindUniq(pRCAll)
-    REMOTE *pRCAll;
-#endif
 {
     REMOTE *pRC;
 
@@ -1296,12 +1482,7 @@ FindUniq(pRCAll)
 }
 
 void
-#if PROTOTYPES
 DestroyRemoteConsole(REMOTE *pRCList)
-#else
-DestroyRemoteConsole(pRCList)
-    REMOTE *pRCList;
-#endif
 {
     NAMES *name = (NAMES *)0;
 

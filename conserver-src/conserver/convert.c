@@ -1,6 +1,4 @@
 /*
- *  $Id: convert.c,v 1.12 2006/04/07 15:47:20 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -58,19 +56,12 @@ DestroyDataStructures()
 }
 
 char *
-#if PROTOTYPES
 ReadLine2(FILE *fp, STRING *save, int *iLine)
-#else
-ReadLine2(fp, save, iLine)
-    FILE *fp;
-    STRING *save;
-    int *iLine;
-#endif
 {
     static char buf[1024];
     char *wholeline = (char *)0;
     char *ret = (char *)0;
-    int i, buflen, peek, commentCheck = 1, comment = 0;
+    int i, buflen, peek, commentCheck = 1;
     static STRING *bufstr = (STRING *)0;
     static STRING *wholestr = (STRING *)0;
 
@@ -112,7 +103,6 @@ ReadLine2(fp, save, iLine)
 		if (!isspace((int)buf[i]))
 		    break;
 	    if (buf[i] == '#') {
-		comment = 1;
 		commentCheck = 0;
 	    } else if (buf[i] != '\000') {
 		commentCheck = 0;
@@ -123,14 +113,11 @@ ReadLine2(fp, save, iLine)
 	buflen = strlen(buf);
 	if ((buflen >= 1) && (buf[buflen - 1] == '\n')) {
 	    (*iLine)++;		/* Finally have a whole line */
-/*	    if (comment == 0 && commentCheck == 0) { */
 	    /* Finish off the chunk without the \n */
 	    buf[buflen - 1] = '\000';
 	    BuildString(buf, bufstr);
 	    wholeline = BuildString(bufstr->string, wholestr);
-/*	    }*/
 	    peek = 1;
-	    comment = 0;
 	    commentCheck = 1;
 	    BuildString((char *)0, bufstr);
 	} else {
@@ -141,10 +128,6 @@ ReadLine2(fp, save, iLine)
 
     /* If we hit the EOF and weren't peeking ahead
      * and it's not a comment
-     */
-    /*
-       if (!peek && (ret == (char *)0) && (comment == 0) &&
-       (commentCheck == 0)) {
      */
     if (!peek && (ret == (char *)0)) {
 	(*iLine)++;
@@ -162,13 +145,7 @@ ReadLine2(fp, save, iLine)
  * to manage the consoles
  */
 void
-#if PROTOTYPES
 ReadCfg(char *pcFile, FILE *fp)
-#else
-ReadCfg(pcFile, fp)
-    char *pcFile;
-    FILE *fp;
-#endif
 {
     int iLine;
     unsigned char *acIn;
@@ -432,7 +409,6 @@ ReadCfg(pcFile, fp)
 	    (unsigned char *)ReadLine2(fp, acInSave,
 				       &iLine)) != (unsigned char *)0) {
 	char *pcNext;
-	char cType;
 
 	acStart = PruneSpace((char *)acIn);
 	if (acStart[0] == '#') {
@@ -478,7 +454,6 @@ ReadCfg(pcFile, fp)
 		printf("\ttrusted %s;\n", pcNext);
 		break;
 	    default:
-		cType = ' ';
 		Error("%s(%d) unknown access key `%s'", pcFile, iLine,
 		      acStart);
 		break;
@@ -490,13 +465,7 @@ ReadCfg(pcFile, fp)
 }
 
 int
-#if PROTOTYPES
 main(int argc, char **argv)
-#else
-main(argc, argv)
-    int argc;
-    char **argv;
-#endif
 {
     char *pcFile;
     FILE *fp;

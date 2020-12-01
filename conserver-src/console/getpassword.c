@@ -1,6 +1,4 @@
 /*
- *  $Id: getpassword.c,v 1.8 2003/11/20 13:56:41 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -31,12 +29,7 @@ static STRING *pass = (STRING *)0;
  * we really use cbreak at PUCC because we need even parity...
  */
 static void
-#if PROTOTYPES
 C2Raw(int fd)
-#else
-C2Raw(fd)
-    int fd;
-#endif
 {
     struct termios n_tios;
 
@@ -64,12 +57,7 @@ C2Raw(fd)
  * put the tty back as it was, however that was
  */
 static void
-#if PROTOTYPES
 C2Normal(int fd)
-#else
-C2Normal(fd)
-    int fd;
-#endif
 {
     if (!screwy)
 	return;
@@ -78,12 +66,7 @@ C2Normal(fd)
 }
 
 char *
-#if PROTOTYPES
 GetPassword(char *prompt)
-#else
-GetPassword(prompt)
-    char *prompt;
-#endif
 {
     int fd;
     int nc;
@@ -140,11 +123,7 @@ GetPassword(prompt)
 }
 
 void
-#if PROTOTYPES
 ClearPassword(void)
-#else
-ClearPassword()
-#endif
 {
     if (pass == (STRING *)0 || pass->allocated == 0)
 	return;

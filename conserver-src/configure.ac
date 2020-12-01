@@ -15,18 +15,21 @@ dnl AH_TEMPLATE([HAVE_POSIX_REGCOMP], [have POSIX regcomp])
 AH_TEMPLATE([HAVE_PAM], [have PAM support])
 AH_TEMPLATE([HAVE_OPENSSL], [have openssl support])
 AH_TEMPLATE([HAVE_GSSAPI], [have gss-api support])
+AH_TEMPLATE([HAVE_FREEIPMI], [have freeipmi support])
 AH_TEMPLATE([STRIP_REALM], [retry username without @REALM with gss-api authentication])
 AH_TEMPLATE([HAVE_DMALLOC], [have dmalloc support])
 AH_TEMPLATE([HAVE_SA_LEN],[Defined if sa_len member exists in struct sockaddr])
 AH_TEMPLATE([TRUST_REVERSE_DNS],[Defined if we trust reverse DNS])
 AH_TEMPLATE([USE_EXTENDED_MESSAGES],[Defined if we produce extended messages])
 AH_TEMPLATE([USE_UNIX_DOMAIN_SOCKETS],[Defined if we use Unix domain sockets])
+AH_TEMPLATE([USE_IPV6], [Defined if building with IPv6 support])
 AH_TEMPLATE([UDSDIR], [Directory for Unix domain sockets])
 AH_TEMPLATE([FOR_CYCLADES_TS], [Defined if building for a Cyclades TS])
 AH_TEMPLATE([REQ_SERVER_CERT], [Defined if client requires server SSL certificate])
+AH_TEMPLATE([TRUST_UDS_CRED], [Defined if we trust credentials from UDS client])
 
 dnl ### Normal initialization. ######################################
-AC_INIT
+AC_INIT([conserver],m4_esyscmd_s([./gen-version number]))
 AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR([conserver/main.c])
 AC_CONFIG_HEADER(config.h)
@@ -39,6 +42,9 @@ if test -z "$CFLAGS"; then
 fi
 MKDIR="mkdir -p -m 755"
 AC_SUBST(MKDIR)
+
+AC_SUBST(CONSERVER_VERSION, m4_esyscmd_s([./gen-version number]))
+AC_SUBST(CONSERVER_DATE, m4_esyscmd_s([./gen-version date]))
 
 
 dnl ### Custom settings. ############################################
@@ -257,35 +263,6 @@ AC_ARG_WITH(extmsgs,
 		;;
 	esac],[AC_MSG_RESULT(no)])
 
-AC_MSG_CHECKING(whether to use Unix domain sockets)
-cons_with_uds="NO"
-AC_ARG_WITH(uds,
-	AS_HELP_STRING([--with-uds@<:@=DIR@:>@    ],
-	    [Use Unix domain sockets for client/server communication @<:@/tmp/conserver@:>@]),
-	[case "$withval" in
-	    yes)
-		AC_DEFINE_UNQUOTED(UDSDIR, "/tmp/conserver")
-		AC_DEFINE(USE_UNIX_DOMAIN_SOCKETS)
-		AC_MSG_RESULT([/tmp/conserver])
-		cons_with_uds="YES"
-		;;
-	    no)
-		AC_MSG_RESULT(no)
-		;;
-	    *)
-		AC_DEFINE_UNQUOTED(UDSDIR, "$withval")
-		AC_DEFINE(USE_UNIX_DOMAIN_SOCKETS)
-		AC_MSG_RESULT('$withval')
-		cons_with_uds="YES"
-		if expr "$withval" : '/' >/dev/null 2>&1; then
-		    :
-		else
-		    echo "*** WARNING *** you may have better success using a fully-qualified path"
-		    echo "*** WARNING *** instead of '$withval'"
-		fi
-		;;
-	esac],[AC_MSG_RESULT(no)])
-
 use_dash_r=no
 AC_MSG_CHECKING(whether to use -R paths as well as -L)
 AC_ARG_WITH(rpath,
@@ -303,7 +280,7 @@ AC_ARG_WITH(rpath,
 
 AC_MSG_CHECKING(whether we are building for a Cyclades TS)
 AC_ARG_WITH(cycladests,
-	AS_HELP_STRING([--with-cycladests],[Build for a Cyclades TS]),
+	AS_HELP_STRING([--with-cycladests],[(deprecated - noop) Build for a Cyclades TS]),
 	[case "$withval" in
 	    yes)
 		AC_DEFINE(FOR_CYCLADES_TS)
@@ -324,7 +301,6 @@ AC_PROG_MAKE_SET
 dnl ### Compiler characteristics. ##################################
 AC_AIX
 AC_C_CONST
-AC_C_PROTOTYPES
 
 dnl AC_CHECK_SIZEOF(long)
 dnl if test "$ac_cv_sizeof_long" -gt 4; then
@@ -383,11 +359,6 @@ AC_TRY_COMPILE([#include <sys/types.h>
 dnl ### Host specific checks. ######################################
 AC_CANONICAL_HOST
 
-if test "$host_os" = "cygwin"; then
-    LDFLAGS="$LDFLAGS -static"
-	AC_MSG_RESULT("Enabling static linking")
-fi
-
 case "$host" in
 *-*-hpux*)
     CPPFLAGS="$CPPFLAGS -D_XOPEN_SOURCE_EXTENDED=1"
@@ -406,6 +377,97 @@ AC_SEARCH_LIBS(crypt,crypt)
 AC_SUBST(CONSLIBS)
 AC_SUBST(CONSCPPFLAGS)
 AC_SUBST(CONSLDFLAGS)
+
+AC_MSG_CHECKING(whether to use Unix domain sockets)
+cons_with_uds="NO"
+AC_ARG_WITH(uds,
+	AS_HELP_STRING([--with-uds@<:@=DIR@:>@    ],
+	    [Use Unix domain sockets for client/server communication @<:@/tmp/conserver@:>@]),
+	[case "$withval" in
+	    yes)
+		AC_DEFINE_UNQUOTED(UDSDIR, "/tmp/conserver")
+		AC_DEFINE(USE_UNIX_DOMAIN_SOCKETS)
+		AC_MSG_RESULT([/tmp/conserver])
+		cons_with_uds="YES"
+		;;
+	    no)
+		AC_MSG_RESULT(no)
+		;;
+	    *)
+		AC_DEFINE_UNQUOTED(UDSDIR, "$withval")
+		AC_DEFINE(USE_UNIX_DOMAIN_SOCKETS)
+		AC_MSG_RESULT('$withval')
+		cons_with_uds="YES"
+		if expr "$withval" : '/' >/dev/null 2>&1; then
+		    :
+		else
+		    echo "*** WARNING *** you may have better success using a fully-qualified path"
+		    echo "*** WARNING *** instead of '$withval'"
+		fi
+		;;
+	esac
+	
+	if test $cons_with_uds = YES; then
+	    AC_MSG_CHECKING(whether to trust UDS credentials)
+	    AC_ARG_WITH(trust-uds-cred,
+		    AS_HELP_STRING([--with-trust-uds-cred],[Trust UDS credentials obtained via socket]),
+		    [case "$withval" in
+			yes)
+			    AC_TRY_COMPILE([#include <sys/types.h>
+				    #include <sys/socket.h>],
+				    [
+struct sockpeercred u;
+u.uid = 0;
+#if !defined(SO_PEERCRED)
+#error "no SO_PEERCRED defined"
+#endif
+				    ],
+				    [AC_MSG_RESULT(yes)
+				     AC_DEFINE(UDS_CRED_STYPE, sockpeercred, [Defined to UDS credential structure name])
+				     AC_DEFINE(UDS_CRED_UID, uid, [Defined to UDS credential structure uid field])
+				     AC_DEFINE(UDS_CRED_SO, SO_PEERCRED, [Defined to UDS credential socket option])
+				     AC_DEFINE(TRUST_UDS_CRED)],
+				    [
+					AC_TRY_COMPILE([#include <sys/types.h>
+						#include <sys/socket.h>],
+						[
+struct ucred u;
+u.euid = 0;
+#if !defined(SO_PEERCRED)
+#error "no SO_PEERCRED defined"
+#endif
+						],
+						[AC_MSG_RESULT(yes)
+						AC_DEFINE(UDS_CRED_STYPE, ucred, [Defined to UDS credential structure name])
+						AC_DEFINE(UDS_CRED_UID, uid, [Defined to UDS credential structure uid field])
+						AC_DEFINE(UDS_CRED_SO, SO_PEERCRED, [Defined to UDS credential socket option])
+						AC_DEFINE(TRUST_UDS_CRED)],
+						[
+							AC_TRY_COMPILE([#include <sys/types.h>
+								#include <sys/socket.h>],
+								[
+struct peercred_struct u;
+u.euid = 0;
+#if !defined(SO_PEERID)
+#error "no SO_PEERID defined"
+#endif
+								],
+								[AC_MSG_RESULT(yes)
+								 AC_DEFINE(UDS_CRED_STYPE, peercred_struct, [Defined to UDS credential structure name])
+								 AC_DEFINE(UDS_CRED_UID, euid, [Defined to UDS credential structure uid field])
+								 AC_DEFINE(UDS_CRED_SO, SO_PEERID, [Defined to UDS credential socket option])
+								 AC_DEFINE(TRUST_UDS_CRED)],
+								[AC_MSG_RESULT(no)]),
+						    ])
+				    ])
+			    ;;
+			*)
+			    AC_MSG_RESULT(no)
+			    ;;
+		    esac],[AC_MSG_RESULT(no)])
+	fi
+	],[AC_MSG_RESULT(no)])
+
 cons_with_libwrap="NO"
 AC_ARG_WITH(libwrap,
     AS_HELP_STRING([--with-libwrap@<:@=PATH@:>@],
@@ -489,10 +551,10 @@ AC_ARG_WITH(openssl,
 	LDFLAGS="$LDFLAGS $OPENSSLLDFLAGS"
 
 	AC_CHECK_HEADER([openssl/ssl.h],
-	    [LIBS="$LIBS -lssl -lcrypto -lz"
+	    [LIBS="$LIBS -lssl -lcrypto"
 	    AC_MSG_CHECKING(for openssl libraries -lssl and -lcrypto)
 	    AC_TRY_LINK([#include <openssl/ssl.h>
-		],[SSL_library_init()],
+		],[SSL_CTX_new(NULL)],
 		[AC_MSG_RESULT(yes)
 		cons_with_openssl="YES"
 		AC_DEFINE(HAVE_OPENSSL)
@@ -550,6 +612,7 @@ AC_ARG_WITH(gssapi,
 	    [LIBS="$oLIBS -lgssapi"
 	    AC_MSG_CHECKING(for gssapi library -lgssapi)
 	    AC_TRY_LINK([#include <gssapi/gssapi.h>
+			 #include <stdio.h>
 		],[gss_create_empty_oid_set(NULL, NULL)],
 		[AC_MSG_RESULT(yes)
 		cons_with_gssapi="YES"
@@ -559,6 +622,7 @@ AC_ARG_WITH(gssapi,
 		LIBS="$oLIBS -lgssglue"
 		AC_MSG_CHECKING(for gssapi library -lgssglue)
 		AC_TRY_LINK([#include <gssapi/gssapi.h>
+			     #include <stdio.h>
 		    ],[gss_create_empty_oid_set(NULL, NULL)],
 		    [AC_MSG_RESULT(yes)
 		    cons_with_gssapi="YES"
@@ -568,6 +632,7 @@ AC_ARG_WITH(gssapi,
 		    LIBS="$oLIBS -lgss"
 		    AC_MSG_CHECKING(for gssapi library -lgss)
 		    AC_TRY_LINK([#include <gssapi/gssapi.h>
+				 #include <stdio.h>
 			],[gss_create_empty_oid_set(NULL, NULL)],
 			[AC_MSG_RESULT(yes)
 			cons_with_gssapi="YES"
@@ -593,6 +658,51 @@ AC_ARG_WITH(gssapi,
 			    AC_MSG_RESULT(no)
 			    ;;
 		    esac],[AC_MSG_RESULT(no)])
+	fi
+    fi]
+)
+
+cons_with_freeipmi="NO"
+AC_ARG_WITH(freeipmi,
+    AS_HELP_STRING([--with-freeipmi@<:@=PATH@:>@],
+	[Compile in FreeIPMI support]),
+    [if test "$withval" != "no"; then
+	if test "$withval" != "yes"; then
+	    FREEIPMICPPFLAGS="-I$withval/include"
+	    if test "$use_dash_r" != "yes"; then
+		FREEIPMILDFLAGS="-L$withval/lib"
+	    else
+		FREEIPMILDFLAGS="-L$withval/lib -R$withval/lib"
+	    fi
+	else
+	    FREEIPMICPPFLAGS=""
+	    FREEIPMILDFLAGS=""
+	fi
+
+	oCPPFLAGS="$CPPFLAGS"
+	oLDFLAGS="$LDFLAGS"
+	oLIBS="$LIBS"
+	have_freeipmi=no
+
+	CPPFLAGS="$CPPFLAGS $FREEIPMICPPFLAGS"
+	LDFLAGS="$LDFLAGS $FREEIPMILDFLAGS"
+
+	AC_CHECK_HEADER([ipmiconsole.h],
+	    [LIBS="$LIBS -lipmiconsole"
+	    AC_MSG_CHECKING(for freeipmi libraries -lipmiconsole)
+	    AC_TRY_LINK([#include <ipmiconsole.h>
+		],[ipmiconsole_ctx_fd(0)],
+		[AC_MSG_RESULT(yes)
+		cons_with_freeipmi="YES"
+		AC_DEFINE(HAVE_FREEIPMI)
+		CONSLIBS="$CONSLIBS -lipmiconsole"
+		have_freeipmi=yes],
+		[AC_MSG_RESULT(no)])],)
+
+	LIBS="$oLIBS"
+	if test $have_freeipmi = no; then
+	    CPPFLAGS="$oCPPFLAGS"
+	    LDFLAGS="$oLDFLAGS"
 	fi
     fi]
 )
@@ -708,6 +818,23 @@ AC_ARG_WITH(pam,
 	    AC_MSG_RESULT(no)
 	fi],[AC_MSG_RESULT(no)])
 
+cons_with_ipv6="NO"
+AC_MSG_CHECKING(whether to support IPv6)
+AC_ARG_WITH(ipv6,
+	AS_HELP_STRING([--with-ipv6],
+	    [(experimental) Use IPv6 for client/server communication]),
+	[case "$withval" in
+	    yes)
+		AC_DEFINE(USE_IPV6)
+		AC_MSG_RESULT(yes)
+		cons_with_ipv6="YES"
+		;;
+	    *)
+		AC_MSG_RESULT(no)
+		;;
+	esac],[AC_MSG_RESULT(no)])
+
+
 dnl Checks for pty allocation...
 dnl According to the xemacs distribution:
 dnl   getpt()  is the preferred pty allocation method on glibc systems.
@@ -723,7 +850,7 @@ AC_CHECK_HEADERS(pty.h libutil.h util.h)
 AC_CHECK_LIB(util, openpty)
 AC_CHECK_FUNCS(openpty)
 
-AC_CHECK_FUNCS(getopt strerror getrlimit getsid setsid getuserattr setgroups tcgetpgrp tcsetpgrp tcgetattr tcsetattr tcsendbreak setpgrp getutent setttyent getspnam setlinebuf setvbuf ptsname grantpt unlockpt sigaction setsockopt getdtablesize putenv memset memcpy memcmp memmove sysconf getlogin inet_aton setproctitle gettimeofday strlcpy)
+AC_CHECK_FUNCS(getopt strerror getrlimit getsid setsid getuserattr setgroups tcgetpgrp tcsetpgrp tcgetattr tcsetattr tcsendbreak setpgrp getutent setttyent getspnam setlinebuf setvbuf ptsname grantpt unlockpt sigaction setsockopt getdtablesize putenv memset memcpy memcmp memmove sysconf getlogin inet_aton setproctitle gettimeofday strlcpy closefrom nanosleep)
 AC_CHECK_FUNC(strcasecmp,
 	[AC_DEFINE(HAVE_STRCASECMP, 1, [Define if strcasecmp is available])],
 	[AC_CHECK_FUNC(stricmp,
@@ -739,6 +866,7 @@ AC_CHECK_FUNCS(getaudit getaudit_addr)
 dnl ### Create output files. #######################################
 AC_CONFIG_FILES([Makefile conserver/Makefile conserver.cf/Makefile console/Makefile autologin/Makefile contrib/chat/Makefile])
 AC_CONFIG_FILES([conserver/conserver.rc], [chmod +x conserver/conserver.rc])
+AC_CONFIG_FILES([conserver.cf/conserver.cf.man conserver.cf/conserver.passwd.man conserver/conserver.man console/console.man])
 AC_OUTPUT
 
 [
@@ -749,11 +877,13 @@ echo "  Unix domain sockets (--with-uds)       : $cons_with_uds"
 echo "         TCP wrappers (--with-libwrap)   : $cons_with_libwrap"
 echo "              OpenSSL (--with-openssl)   : $cons_with_openssl"
 echo "              GSS-API (--with-gssapi)    : $cons_with_gssapi"
+echo "             FreeIPMI (--with-freeipmi)  : $cons_with_freeipmi"
 if [ $cons_with_gssapi = "YES" ]; then
 echo "         strip @REALM (--with-striprealm): $cons_strip_realm"
 fi
 echo "              dmalloc (--with-dmalloc)   : $cons_with_dmalloc"
 echo "          PAM support (--with-pam)       : $cons_with_pam"
+echo "         IPv6 support (--with-ipv6)      : $cons_with_ipv6"
 echo ""
 echo "=============================================================="
 ]

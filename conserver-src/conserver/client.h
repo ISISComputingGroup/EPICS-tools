@@ -1,6 +1,4 @@
 /*
- *  $Id: client.h,v 5.44 2013/09/23 22:58:21 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -87,15 +85,14 @@ typedef struct client {		/* Connection Information:              */
     IOSTATE ioState;		/* state of the socket                  */
     time_t stateTimer;		/* timer for various ioState states */
     STRING *accmd;		/* the command the user issued          */
-    struct sockaddr_in
-      cnct_port;		/* where from                           */
+    INADDR_STYPE cnct_port;	/* where from                           */
     FLAG confirmed;		/* confirm state                        */
     CLIENTSTATE cState;		/* state needing confirmation           */
     char cOption;		/* option initiating the confirmation   */
 } CONSCLIENT;
 
-extern void Replay PARAMS((CONSENT *, CONSFILE *, unsigned short));
-extern void HelpUser PARAMS((CONSCLIENT *));
-extern void FindWrite PARAMS((CONSENT *));
-extern int ClientAccessOk PARAMS((CONSCLIENT *));
-extern void BumpClient PARAMS((CONSENT *, char *));
+extern void Replay(CONSENT *, CONSFILE *, unsigned short);
+extern void HelpUser(CONSCLIENT *);
+extern void FindWrite(CONSENT *);
+extern int ClientAccessOk(CONSCLIENT *);
+extern void BumpClient(CONSENT *, char *);

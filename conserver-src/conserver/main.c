@@ -1,6 +1,4 @@
 /*
- *  $Id: main.c,v 5.208 2013/09/25 22:10:29 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -54,9 +52,15 @@ int fAll = 0, fNoinit = 0, fVersion = 0, fStrip = 0, fReopen =
 
 char *pcConfig = CONFIGFILE;
 int cMaxMemb = MAXMEMB;
+#if USE_IPV6
+struct addrinfo *bindAddr;
+struct addrinfo *bindBaseAddr;
+#else
 in_addr_t bindAddr = INADDR_ANY;
 unsigned short bindPort;
 unsigned short bindBasePort;
+struct sockaddr_in in_port;
+#endif
 static STRING *startedMsg = (STRING *)0;
 CONFIG *optConf = (CONFIG *)0;
 CONFIG *config = (CONFIG *)0;
@@ -73,7 +77,6 @@ CONFIG defConfig =
 #endif
 };
 
-struct sockaddr_in in_port;
 CONSFILE *unifiedlog = (CONSFILE *)0;
 
 #if HAVE_DMALLOC && DMALLOC_MARK_MAIN
@@ -81,19 +84,80 @@ unsigned long dmallocMarkMain = 0;
 #endif
 
 #if HAVE_OPENSSL
+# if OPENSSL_VERSION_NUMBER < 0x10100000L
+int
+DH_set0_pqg(DH *dh, BIGNUM * p, BIGNUM * q, BIGNUM * g)
+{
+    /* If the fields p and g in d are NULL, the corresponding input
+     * parameters MUST be non-NULL.  q may remain NULL.
+     */
+    if ((dh->p == NULL && p == NULL)
+	|| (dh->g == NULL && g == NULL))
+	return 0;
+
+    if (p != NULL) {
+	BN_free(dh->p);
+	dh->p = p;
+    }
+    if (q != NULL) {
+	BN_free(dh->q);
+	dh->q = q;
+    }
+    if (g != NULL) {
+	BN_free(dh->g);
+	dh->g = g;
+    }
+
+    if (q != NULL) {
+	dh->length = BN_num_bits(q);
+    }
+
+    return 1;
+}
+# endif/* OPENSSL_VERSION_NUMBER < 0x10100000L */
+
 SSL_CTX *ctx = (SSL_CTX *)0;
 DH *dh512 = (DH *)0;
 DH *dh1024 = (DH *)0;
 DH *dh2048 = (DH *)0;
 DH *dh4096 = (DH *)0;
 
+DH *
+DHFromArray(unsigned char *dh_p, size_t dh_p_size, unsigned char *dh_g,
+	    size_t dh_g_size)
+{
+    DH *dh;
+    BIGNUM *p, *g;
+
+    p = BN_bin2bn(dh_p, dh_p_size, NULL);
+    if (p == NULL) {
+	return (NULL);
+    }
+
+    g = BN_bin2bn(dh_g, dh_g_size, NULL);
+    if (g == NULL) {
+	BN_free(g);
+	return (NULL);
+    }
+
+    if ((dh = DH_new()) == NULL) {
+	BN_free(p);
+	BN_free(g);
+	return (NULL);
+    }
+
+    if (!DH_set0_pqg(dh, p, NULL, g)) {
+	BN_free(p);
+	BN_free(g);
+	DH_free(dh);
+	return (NULL);
+    }
+
+    return (dh);
+}
 
 DH *
-#if PROTOTYPES
 GetDH512(void)
-#else
-GetDH512()
-#endif
 {
     static unsigned char dh512_p[] = {
 	0xF5, 0x2A, 0xFF, 0x3C, 0xE1, 0xB1, 0x29, 0x40, 0x18, 0x11, 0x8D,
@@ -107,25 +171,12 @@ GetDH512()
     static unsigned char dh512_g[] = {
 	0x02,
     };
-    DH *dh;
 
-    if ((dh = DH_new()) == NULL)
-	return (NULL);
-    dh->p = BN_bin2bn(dh512_p, sizeof(dh512_p), NULL);
-    dh->g = BN_bin2bn(dh512_g, sizeof(dh512_g), NULL);
-    if ((dh->p == NULL) || (dh->g == NULL)) {
-	DH_free(dh);
-	return (NULL);
-    }
-    return (dh);
+    return DHFromArray(dh512_p, sizeof(dh512_p), dh512_g, sizeof(dh512_g));
 }
 
 DH *
-#if PROTOTYPES
 GetDH1024(void)
-#else
-GetDH1024()
-#endif
 {
     static unsigned char dh1024_p[] = {
 	0xF4, 0x88, 0xFD, 0x58, 0x4E, 0x49, 0xDB, 0xCD, 0x20, 0xB4, 0x9D,
@@ -145,25 +196,13 @@ GetDH1024()
     static unsigned char dh1024_g[] = {
 	0x02,
     };
-    DH *dh;
 
-    if ((dh = DH_new()) == NULL)
-	return (NULL);
-    dh->p = BN_bin2bn(dh1024_p, sizeof(dh1024_p), NULL);
-    dh->g = BN_bin2bn(dh1024_g, sizeof(dh1024_g), NULL);
-    if ((dh->p == NULL) || (dh->g == NULL)) {
-	DH_free(dh);
-	return (NULL);
-    }
-    return (dh);
+    return DHFromArray(dh1024_p, sizeof(dh1024_p), dh1024_g,
+		       sizeof(dh1024_g));
 }
 
 DH *
-#if PROTOTYPES
 GetDH2048(void)
-#else
-GetDH2048()
-#endif
 {
     static unsigned char dh2048_p[] = {
 	0xF6, 0x42, 0x57, 0xB7, 0x08, 0x7F, 0x08, 0x17, 0x72, 0xA2, 0xBA,
@@ -196,25 +235,13 @@ GetDH2048()
     static unsigned char dh2048_g[] = {
 	0x02,
     };
-    DH *dh;
 
-    if ((dh = DH_new()) == NULL)
-	return (NULL);
-    dh->p = BN_bin2bn(dh2048_p, sizeof(dh2048_p), NULL);
-    dh->g = BN_bin2bn(dh2048_g, sizeof(dh2048_g), NULL);
-    if ((dh->p == NULL) || (dh->g == NULL)) {
-	DH_free(dh);
-	return (NULL);
-    }
-    return (dh);
+    return DHFromArray(dh2048_p, sizeof(dh2048_p), dh2048_g,
+		       sizeof(dh2048_g));
 }
 
 DH *
-#if PROTOTYPES
 GetDH4096(void)
-#else
-GetDH4096()
-#endif
 {
     static unsigned char dh4096_p[] = {
 	0xFA, 0x14, 0x72, 0x52, 0xC1, 0x4D, 0xE1, 0x5A, 0x49, 0xD4, 0xEF,
@@ -273,28 +300,13 @@ GetDH4096()
     static unsigned char dh4096_g[] = {
 	0x02,
     };
-    DH *dh;
 
-    if ((dh = DH_new()) == NULL)
-	return (NULL);
-    dh->p = BN_bin2bn(dh4096_p, sizeof(dh4096_p), NULL);
-    dh->g = BN_bin2bn(dh4096_g, sizeof(dh4096_g), NULL);
-    if ((dh->p == NULL) || (dh->g == NULL)) {
-	DH_free(dh);
-	return (NULL);
-    }
-    return (dh);
+    return DHFromArray(dh4096_p, sizeof(dh4096_p), dh4096_g,
+		       sizeof(dh4096_g));
 }
 
 DH *
-#if PROTOTYPES
 TmpDHCallback(SSL *ssl, int is_export, int keylength)
-#else
-TmpDHCallback(ssl, is_export, keylength)
-    SSL *ssl;
-    int is_export;
-    int keylength;
-#endif
 {
     CONDDEBUG((1, "TmpDHCallback(): asked for a DH key length %u",
 	       keylength));
@@ -319,21 +331,19 @@ TmpDHCallback(ssl, is_export, keylength)
 }
 
 void
-#if PROTOTYPES
 SetupSSL(void)
-#else
-SetupSSL()
-#endif
 {
     if (ctx == (SSL_CTX *)0) {
 	char *ciphers;
 	int verifymode;
+# if OPENSSL_VERSION_NUMBER < 0x10100000L
 	SSL_load_error_strings();
 	if (!SSL_library_init()) {
 	    Error("SetupSSL(): SSL_library_init() failed");
 	    Bye(EX_SOFTWARE);
 	}
-	if ((ctx = SSL_CTX_new(SSLv23_method())) == (SSL_CTX *)0) {
+# endif/* OPENSSL_VERSION_NUMBER < 0x10100000L */
+	if ((ctx = SSL_CTX_new(TLS_method())) == (SSL_CTX *)0) {
 	    Error("SetupSSL(): SSL_CTX_new() failed");
 	    Bye(EX_SOFTWARE);
 	}
@@ -359,7 +369,7 @@ SetupSSL()
 	    }
 	    ciphers = "ALL:!LOW:!EXP:!MD5:!aNULL:@STRENGTH";
 	} else {
-	    ciphers = "ALL:!LOW:!EXP:!MD5:@STRENGTH";
+	    ciphers = "ALL:aNULL:!LOW:!EXP:!MD5:@STRENGTH" CIPHER_SEC0;
 	}
 	if (config->sslcacertificatefile != (char *)0) {
 	    STACK_OF(X509_NAME) * cert_names;
@@ -411,11 +421,7 @@ gss_name_t gss_myname = GSS_C_NO_NAME;
 gss_cred_id_t gss_mycreds = GSS_C_NO_CREDENTIAL;
 
 void
-#if PROTOTYPES
 SetupGSSAPI(void)
-#else
-SetupGSSAPI()
-#endif
 {
     OM_uint32 stmaj, stmin;
     char namestr[128];
@@ -443,11 +449,7 @@ SetupGSSAPI()
 #endif
 
 void
-#if PROTOTYPES
 ReopenLogfile(void)
-#else
-ReopenLogfile()
-#endif
 {
     static int tag = 1;
     /* redirect stdout and stderr to the logfile.
@@ -489,11 +491,7 @@ ReopenLogfile()
 }
 
 void
-#if PROTOTYPES
 ReopenUnifiedlog(void)
-#else
-ReopenUnifiedlog()
-#endif
 {
     /* close any existing */
     if (unifiedlog != (CONSFILE *)0)
@@ -516,11 +514,7 @@ ReopenUnifiedlog()
 /* become a daemon							(ksb)
  */
 static void
-#if PROTOTYPES
-Daemonize()
-#else
-Daemonize()
-#endif
+Daemonize(void)
 {
     int res;
 #if !HAVE_SETSID
@@ -581,12 +575,7 @@ Daemonize()
 /* output a long message to the user					(ksb)
  */
 static void
-#if PROTOTYPES
 Usage(int wantfull)
-#else
-Usage(wantfull)
-    int wantfull;
-#endif
 {
     static char u_terse[] =
 	"[-7dDEFhinoRSuvV] [-a type] [-m max] [-M master] [-p port] [-b port] [-c cred] [-C config] [-P passwd] [-L logfile] [-O min] [-U logfile]";
@@ -645,11 +634,7 @@ Usage(wantfull)
 /* show the user our version info					(ksb)
  */
 static void
-#if PROTOTYPES
-Version()
-#else
-Version()
-#endif
+Version(void)
 {
     static STRING *acA1 = (STRING *)0;
     static STRING *acA2 = (STRING *)0;
@@ -657,6 +642,9 @@ Version()
     char *optionlist[] = {
 #if HAVE_DMALLOC
 	"dmalloc",
+#endif
+#if HAVE_FREEIPMI
+	"freeipmi",
 #endif
 #if USE_LIBWRAP
 	"libwrap",
@@ -720,13 +708,22 @@ Version()
     BuildStringChar('0' + DMALLOC_VERSION_MINOR, acA1);
     BuildStringChar('.', acA1);
     BuildStringChar('0' + DMALLOC_VERSION_PATCH, acA1);
-#if defined(DMALLOC_VERSION_BETA)
+# if defined(DMALLOC_VERSION_BETA)
     if (DMALLOC_VERSION_BETA != 0) {
 	BuildString("-b", acA1);
 	BuildStringChar('0' + DMALLOC_VERSION_BETA, acA1);
     }
-#endif
+# endif
     Msg("dmalloc version: %s", acA1->string);
+#endif
+#if HAVE_FREEIPMI
+    BuildString((char *)0, acA1);
+    BuildStringChar('0' + LIBIPMICONSOLE_VERSION_MAJOR, acA1);
+    BuildStringChar('.', acA1);
+    BuildStringChar('0' + LIBIPMICONSOLE_VERSION_MINOR, acA1);
+    BuildStringChar('.', acA1);
+    BuildStringChar('0' + LIBIPMICONSOLE_VERSION_PATCH, acA1);
+    Msg("freeipmi version: %s", acA1->string);
 #endif
 #if HAVE_OPENSSL
     Msg("openssl version: %s", OPENSSL_VERSION_TEXT);
@@ -739,11 +736,7 @@ Version()
 }
 
 void
-#if PROTOTYPES
 DestroyDataStructures(void)
-#else
-DestroyDataStructures()
-#endif
 {
     GRPENT *pGE;
     REMOTE *pRC;
@@ -786,8 +779,14 @@ DestroyDataStructures()
 	DH_free(dh4096);
 #endif
 
+#if USE_IPV6
+    /* clean up addrinfo stucts */
+    freeaddrinfo(bindAddr);
+    freeaddrinfo(bindBaseAddr);
+#else
     if (myAddrs != (struct in_addr *)0)
 	free(myAddrs);
+#endif
 
     DestroyBreakList();
     DestroyTaskList();
@@ -798,11 +797,7 @@ DestroyDataStructures()
 }
 
 void
-#if PROTOTYPES
 SummarizeDataStructures(void)
-#else
-SummarizeDataStructures()
-#endif
 {
     GRPENT *pGE;
     REMOTE *pRC;
@@ -854,6 +849,12 @@ SummarizeDataStructures()
 		size += strlen(pCE->tasklist);
 	    if (pCE->breaklist != (char *)0)
 		size += strlen(pCE->breaklist);
+#if HAVE_FREEIPMI
+	    if (pCE->username != (char *)0)
+		size += strlen(pCE->username);
+	    if (pCE->password != (char *)0)
+		size += strlen(pCE->password);
+#endif
 	    if (pCE->fdlog != (CONSFILE *)0)
 		size += sizeof(CONSFILE);
 	    if (pCE->cofile != (CONSFILE *)0)
@@ -925,17 +926,18 @@ SummarizeDataStructures()
 }
 
 void
-#if PROTOTYPES
 DumpDataStructures(void)
-#else
-DumpDataStructures()
-#endif
 {
     GRPENT *pGE;
     CONSENT *pCE;
     REMOTE *pRC;
     int i;
     TASKS *t;
+#if HAVE_FREEIPMI
+    static STRING *tmpString = (STRING *)0;
+    if (tmpString == (STRING *)0)
+	tmpString = AllocString();
+#endif
 
 #if HAVE_DMALLOC && DMALLOC_MARK_MAIN
     CONDDEBUG((1, "DumpDataStructures(): dmalloc / MarkMain"));
@@ -979,6 +981,27 @@ DumpDataStructures()
 			       pCE->execuid, pCE->execgid));
 
 		    break;
+#if HAVE_FREEIPMI
+		case IPMI:
+		    CONDDEBUG((1,
+			       "DumpDataStructures():  server=%s, type=IPMI",
+			       EMPTYSTR(pCE->server)));
+		    CONDDEBUG((1,
+			       "DumpDataStructures():  host=%s, username=%s, password=%s, ipmiprivlevel=%d",
+			       EMPTYSTR(pCE->host),
+			       EMPTYSTR(pCE->username),
+			       EMPTYSTR(pCE->password),
+			       pCE->ipmiprivlevel));
+		    CONDDEBUG((1,
+			       "DumpDataStructures():  ipmiwrkset=%d, ipmiworkaround=%u, ipmiciphersuite=%d",
+			       pCE->ipmiwrkset, pCE->ipmiworkaround,
+			       pCE->ipmiciphersuite));
+		    FmtCtlStr(pCE->ipmikg->string, pCE->ipmikg->used - 1,
+			      tmpString);
+		    CONDDEBUG((1, "DumpDataStructures():  ipmikg=%s",
+			       EMPTYSTR(tmpString->string)));
+		    break;
+#endif
 		case HOST:
 		    CONDDEBUG((1,
 			       "DumpDataStructures():  server=%s, type=HOST",
@@ -1085,9 +1108,10 @@ DumpDataStructures()
 	    }
 	}
     }
-    for (i = 0; i < 9; i++) {
+    for (i = 0; i < BREAKLISTSIZE; i++) {
 	CONDDEBUG((1,
-		   "DumpDataStructures(): break: string=%s, delay=%d, confirm=%s",
+		   "DumpDataStructures(): break: #%c, string=%s, delay=%d, confirm=%s",
+		   '1' + i + (i > 8 ? BREAKALPHAOFFSET : 0),
 		   EMPTYSTR(breakList[i].seq->string), breakList[i].delay,
 		   FLAGSTR(breakList[i].confirm)));
     }
@@ -1105,17 +1129,14 @@ DumpDataStructures()
  */
 #if USE_UNIX_DOMAIN_SOCKETS
 int
-#if PROTOTYPES
 VerifyEmptyDirectory(char *d)
-#else
-VerifyEmptyDirectory(d)
-    char *d;
-#endif
 {
     struct stat dstat;
     DIR *dir;
     struct dirent *de;
+# if 0				/* See below */
     STRING *path = (STRING *)0;
+# endif
     int retval = 0;
 
     while (1) {
@@ -1156,7 +1177,7 @@ VerifyEmptyDirectory(d)
  * database, config files, etc.  too many important files could be
  * shredded with a small typo.
  */
-#if 0
+# if 0
 	if (path == (STRING *)0)
 	    path = AllocString();
 	BuildStringPrint(path, "%s/%s", d, de->d_name);
@@ -1178,11 +1199,16 @@ VerifyEmptyDirectory(d)
 		break;
 	    }
 	}
-#endif
+# endif
     }
 
+# if 0				/* See above */
     if (path != (STRING *)0)
 	DestroyString(path);
+# endif
+
+    /* free dir data structure */
+    closedir(dir);
 
     return retval;
 }
@@ -1197,26 +1223,27 @@ VerifyEmptyDirectory(d)
  * exit happy
  */
 int
-#if PROTOTYPES
 main(int argc, char **argv)
-#else
-main(argc, argv)
-    int argc;
-    char **argv;
-#endif
 {
     int i;
     FILE *fpConfig = (FILE *)0;
     static char acOpts[] = "7a:b:c:C:dDEFhiL:m:M:noO:p:P:RSuU:Vv";
+    extern int optopt;
+    extern char *optarg;
     struct passwd *pwd;
     char *origuser = (char *)0;
     char *curuser = (char *)0;
     int curuid = 0;
     GRPENT *pGE = (GRPENT *)0;
 #if !USE_UNIX_DOMAIN_SOCKETS
-#if HAVE_INET_ATON
+# if USE_IPV6
+    int s;
+    struct addrinfo hints;
+# else
+#  if HAVE_INET_ATON
     struct in_addr inetaddr;
-#endif
+#  endif
+# endif
 #endif
 
     isMultiProc = 1;		/* make sure stuff has the pid */
@@ -1246,6 +1273,9 @@ main(argc, argv)
     setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
     setvbuf(stderr, NULL, _IOLBF, BUFSIZ);
 #endif
+
+    /* Initialize the break list */
+    InitBreakList();
 
     /* prep the config options */
     if ((optConf = (CONFIG *)calloc(1, sizeof(CONFIG)))
@@ -1414,7 +1444,119 @@ main(argc, argv)
     if (fSyntaxOnly)
 	Msg("performing configuration file syntax check");
 
-#if USE_UNIX_DOMAIN_SOCKETS
+    /* must do all this so IsMe() works right */
+    if (gethostname(myHostname, MAXHOSTNAME) != 0) {
+	Error("gethostname(): %s", strerror(errno));
+	Bye(EX_OSERR);
+    }
+#if !USE_IPV6
+    ProbeInterfaces(bindAddr);
+#endif
+#if !HAVE_CLOSEFROM
+    i = GetMaxFiles();
+    CONDDEBUG((1, "main(): GetMaxFiles=%d", i));
+#endif
+
+    /* initialize the timers */
+    for (i = 0; i < T_MAX; i++)
+	timers[i] = (time_t)0;
+
+    /* read the config file */
+    if ((FILE *)0 == (fpConfig = fopen(pcConfig, "r"))) {
+	Error("fopen(%s): %s", pcConfig, strerror(errno));
+	Bye(EX_NOINPUT);
+    }
+    ReadCfg(pcConfig, fpConfig);
+    fclose(fpConfig);
+
+#if !USE_UNIX_DOMAIN_SOCKETS
+    /* set up the port to bind to */
+    if (optConf->primaryport != (char *)0)
+	config->primaryport = StrDup(optConf->primaryport);
+    else if (pConfig->primaryport != (char *)0)
+	config->primaryport = StrDup(pConfig->primaryport);
+    else
+	config->primaryport = StrDup(defConfig.primaryport);
+    if (config->primaryport == (char *)0)
+	OutOfMem();
+
+# if !USE_IPV6
+    /* Look for non-numeric characters */
+    for (i = 0; config->primaryport[i] != '\000'; i++)
+	if (!isdigit((int)config->primaryport[i]))
+	    break;
+
+    if (config->primaryport[i] == '\000') {
+	/* numeric only */
+	bindPort = atoi(config->primaryport);
+    } else {
+	/* non-numeric only */
+	struct servent *pSE;
+	if ((struct servent *)0 ==
+	    (pSE = getservbyname(config->primaryport, "tcp"))) {
+	    Error("getservbyname(%s) failed", config->primaryport);
+	    Bye(EX_OSERR);
+	} else {
+	    bindPort = ntohs((unsigned short)pSE->s_port);
+	}
+    }
+# endif
+
+    /* set up the secondary port to bind to */
+    if (optConf->secondaryport != (char *)0)
+	config->secondaryport = StrDup(optConf->secondaryport);
+    else if (pConfig->secondaryport != (char *)0)
+	config->secondaryport = StrDup(pConfig->secondaryport);
+    else
+	config->secondaryport = StrDup(defConfig.secondaryport);
+    if (config->secondaryport == (char *)0)
+	OutOfMem();
+
+# if !USE_IPV6
+    /* Look for non-numeric characters */
+    for (i = 0; config->secondaryport[i] != '\000'; i++)
+	if (!isdigit((int)config->secondaryport[i]))
+	    break;
+
+    if (config->secondaryport[i] == '\000') {
+	/* numeric only */
+	bindBasePort = atoi(config->secondaryport);
+    } else {
+	/* non-numeric only */
+	struct servent *pSE;
+	if ((struct servent *)0 ==
+	    (pSE = getservbyname(config->secondaryport, "tcp"))) {
+	    Error("getservbyname(%s) failed", config->secondaryport);
+	    Bye(EX_OSERR);
+	} else {
+	    bindBasePort = ntohs((unsigned short)pSE->s_port);
+	}
+    }
+# endif
+#endif
+
+#if USE_IPV6
+    /* set up the address to bind to */
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags |= AI_PASSIVE;
+
+    /* create list or IPs suitable for primaryport */
+    s = getaddrinfo(interface, config->primaryport, &hints, &bindAddr);
+    if (s) {
+	Error("getaddrinfo(%s): %s", interface, gai_strerror(s));
+	Bye(EX_OSERR);
+    }
+
+    /* create list or IPs suitable for secondaryport */
+    s = getaddrinfo(interface, config->secondaryport, &hints,
+		    &bindBaseAddr);
+    if (s) {
+	Error("getaddrinfo(%s): %s", interface, gai_strerror(s));
+	Bye(EX_OSERR);
+    }
+#elif USE_UNIX_DOMAIN_SOCKETS
     /* Don't do any redirects if we're purely local
      * (but it allows them to see where remote consoles are)
      */
@@ -1445,87 +1587,6 @@ main(argc, argv)
 	struct in_addr ba;
 	ba.s_addr = bindAddr;
 	CONDDEBUG((1, "main(): bind address set to `%s'", inet_ntoa(ba)));
-    }
-#endif
-
-    /* must do all this so IsMe() works right */
-    if (gethostname(myHostname, MAXHOSTNAME) != 0) {
-	Error("gethostname(): %s", strerror(errno));
-	Bye(EX_OSERR);
-    }
-    ProbeInterfaces(bindAddr);
-
-    /* initialize the timers */
-    for (i = 0; i < T_MAX; i++)
-	timers[i] = (time_t)0;
-
-    /* read the config file */
-    if ((FILE *)0 == (fpConfig = fopen(pcConfig, "r"))) {
-	Error("fopen(%s): %s", pcConfig, strerror(errno));
-	Bye(EX_NOINPUT);
-    }
-    ReadCfg(pcConfig, fpConfig);
-    fclose(fpConfig);
-
-#if !USE_UNIX_DOMAIN_SOCKETS
-    /* set up the port to bind to */
-    if (optConf->primaryport != (char *)0)
-	config->primaryport = StrDup(optConf->primaryport);
-    else if (pConfig->primaryport != (char *)0)
-	config->primaryport = StrDup(pConfig->primaryport);
-    else
-	config->primaryport = StrDup(defConfig.primaryport);
-    if (config->primaryport == (char *)0)
-	OutOfMem();
-
-    /* Look for non-numeric characters */
-    for (i = 0; config->primaryport[i] != '\000'; i++)
-	if (!isdigit((int)config->primaryport[i]))
-	    break;
-
-    if (config->primaryport[i] == '\000') {
-	/* numeric only */
-	bindPort = atoi(config->primaryport);
-    } else {
-	/* non-numeric only */
-	struct servent *pSE;
-	if ((struct servent *)0 ==
-	    (pSE = getservbyname(config->primaryport, "tcp"))) {
-	    Error("getservbyname(%s) failed", config->primaryport);
-	    Bye(EX_OSERR);
-	} else {
-	    bindPort = ntohs((unsigned short)pSE->s_port);
-	}
-    }
-
-    /* set up the secondary port to bind to */
-    if (optConf->secondaryport != (char *)0)
-	config->secondaryport = StrDup(optConf->secondaryport);
-    else if (pConfig->secondaryport != (char *)0)
-	config->secondaryport = StrDup(pConfig->secondaryport);
-    else
-	config->secondaryport = StrDup(defConfig.secondaryport);
-    if (config->secondaryport == (char *)0)
-	OutOfMem();
-
-    /* Look for non-numeric characters */
-    for (i = 0; config->secondaryport[i] != '\000'; i++)
-	if (!isdigit((int)config->secondaryport[i]))
-	    break;
-
-    if (config->secondaryport[i] == '\000') {
-	/* numeric only */
-	bindBasePort = atoi(config->secondaryport);
-    } else {
-	/* non-numeric only */
-	struct servent *pSE;
-	if ((struct servent *)0 ==
-	    (pSE = getservbyname(config->secondaryport, "tcp"))) {
-	    Error("getservbyname(%s) failed", config->secondaryport);
-	    Bye(EX_OSERR);
-	} else {
-	    bindBasePort = ntohs((unsigned short)pSE->s_port);
-	}
     }
 #endif
 
@@ -1681,7 +1742,11 @@ main(argc, argv)
 	/* if no one can use us we need to come up with a default
 	 */
 	if (pACList == (ACCESS *)0)
+#if USE_IPV6
+	    SetDefAccess();
+#else
 	    SetDefAccess(myAddrs, myHostname);
+#endif
 
 	/* spawn all the children, so fix kids has an initial pid
 	 */
@@ -1703,13 +1768,15 @@ main(argc, argv)
 		local += pGE->imembers;
 	    for (pRC = pRCList; (REMOTE *)0 != pRC; pRC = pRC->pRCnext)
 		remote++;
-# if USE_UNIX_DOMAIN_SOCKETS
-	    setproctitle("master: port 0, %d local, %d remote", local,
-			 remote);
-#else
-	    setproctitle("master: port %hu, %d local, %d remote", bindPort,
+	    setproctitle("master: port %hu, %d local, %d remote",
+# if USE_IPV6
+			 config->primaryport,
+# elif USE_UNIX_DOMAIN_SOCKETS
+			 (unsigned short)0,
+# else
+			 bindPort,
+# endif
 			 local, remote);
-#endif
 	}
 #endif
 

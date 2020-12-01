@@ -1,6 +1,4 @@
 /*
- *  $Id: consent.h,v 5.72 2013/09/26 17:32:55 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -57,8 +55,18 @@ typedef enum consType {
     EXEC,
     HOST,
     NOOP,
-    UDS
+    UDS,
+#if HAVE_FREEIPMI
+    IPMI,
+#endif
 } CONSTYPE;
+
+#if HAVE_FREEIPMI
+# define IPMIL_UNKNOWN  (0)
+# define IPMIL_USER     (IPMICONSOLE_PRIVILEGE_USER+1)
+# define IPMIL_OPERATOR (IPMICONSOLE_PRIVILEGE_OPERATOR+1)
+# define IPMIL_ADMIN    (IPMICONSOLE_PRIVILEGE_ADMIN+1)
+#endif
 
 typedef struct names {
     char *name;
@@ -92,6 +100,17 @@ typedef struct consent {	/* console information                  */
 #if defined(CRTSCTS)
     FLAG crtscts;		/* use hardware flow control            */
 #endif
+#if HAVE_FREEIPMI
+    /* type == IPMI */
+    int ipmiprivlevel;		/* IPMI authentication level            */
+    ipmiconsole_ctx_t ipmictx;	/* IPMI ctx                             */
+    unsigned int ipmiworkaround;	/* IPMI workaround flags                */
+    short ipmiwrkset;		/* workaround flags set in config       */
+    int ipmiciphersuite;	/* IPMI cipher suite                    */
+    char *username;		/* Username to log as                   */
+    char *password;		/* Login Password                       */
+    STRING *ipmikg;		/* IPMI k_g auth key                    */
+#endif
     /* type == HOST */
     char *host;			/* hostname                             */
     unsigned short netport;	/* final port    | netport = portbase + */
@@ -109,7 +128,7 @@ typedef struct consent {	/* console information                  */
     char *udssubst;		/* socket file substitution pattern     */
     /* global stuff */
     char *master;		/* master hostname                      */
-    unsigned short breakNum;	/* break type [1-9]                     */
+    unsigned short breakNum;	/* break type [1-35]                    */
     char *logfile;		/* logfile                              */
     off_t logfilemax;		/* size limit for rolling logfile       */
     char *initcmd;		/* initcmd command                      */
@@ -188,13 +207,13 @@ typedef struct remote {		/* console at another host              */
     NAMES *aliases;		/* aliases for remote server name       */
 } REMOTE;
 
-extern PARITY *FindParity PARAMS((char *));
-extern BAUD *FindBaud PARAMS((char *));
-extern void ConsInit PARAMS((CONSENT *));
-extern void ConsDown PARAMS((CONSENT *, FLAG, FLAG));
-extern REMOTE *FindUniq PARAMS((REMOTE *));
-extern void DestroyRemoteConsole PARAMS((REMOTE *));
-extern void StartInit PARAMS((CONSENT *));
-extern void StopInit PARAMS((CONSENT *));
-extern char *ConsState PARAMS((CONSENT *));
-extern void SetupTty PARAMS((CONSENT *, int));
+extern PARITY *FindParity(char *);
+extern BAUD *FindBaud(char *);
+extern void ConsInit(CONSENT *);
+extern void ConsDown(CONSENT *, FLAG, FLAG);
+extern REMOTE *FindUniq(REMOTE *);
+extern void DestroyRemoteConsole(REMOTE *);
+extern void StartInit(CONSENT *);
+extern void StopInit(CONSENT *);
+extern char *ConsState(CONSENT *);
+extern void SetupTty(CONSENT *, int);

@@ -1,6 +1,4 @@
 /*
- *  $Id: console.c,v 5.188 2013/09/18 14:31:39 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -36,15 +34,16 @@
 #include <readconf.h>
 #include <version.h>
 #if HAVE_OPENSSL
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/opensslv.h>
+# include <openssl/opensslv.h>
 #endif
 #if HAVE_GSSAPI
-#include <gssapi/gssapi.h>
+# include <gssapi/gssapi.h>
+#endif
+#if USE_IPV6
+# include <sys/socket.h>
+# include <netdb.h>
 #endif
 
-#include "setconsoletitle.h"
 
 int fReplay = 0, fVersion = 0;
 int showExecData = 1;
@@ -71,20 +70,18 @@ struct winsize ws;
 SSL_CTX *ctx = (SSL_CTX *)0;
 
 void
-#if PROTOTYPES
 SetupSSL(void)
-#else
-SetupSSL()
-#endif
 {
     if (ctx == (SSL_CTX *)0) {
 	char *ciphers;
+# if OPENSSL_VERSION_NUMBER < 0x10100000L
 	SSL_load_error_strings();
 	if (!SSL_library_init()) {
 	    Error("SSL library initialization failed");
 	    Bye(EX_UNAVAILABLE);
 	}
-	if ((ctx = SSL_CTX_new(SSLv23_method())) == (SSL_CTX *)0) {
+# endif/* OPENSSL_VERSION_NUMBER < 0x10100000L */
+	if ((ctx = SSL_CTX_new(TLS_method())) == (SSL_CTX *)0) {
 	    Error("Creating SSL context failed");
 	    Bye(EX_UNAVAILABLE);
 	}
@@ -121,11 +118,11 @@ SetupSSL()
 	    }
 	    ciphers = "ALL:!LOW:!EXP:!MD5:!aNULL:@STRENGTH";
 	} else {
-#if defined(REQ_SERVER_CERT)
+# if defined(REQ_SERVER_CERT)
 	    ciphers = "ALL:!LOW:!EXP:!MD5:!aNULL:@STRENGTH";
-#else
-	    ciphers = "ALL:!LOW:!EXP:!MD5:@STRENGTH";
-#endif
+# else
+	    ciphers = "ALL:aNULL:!LOW:!EXP:!MD5:@STRENGTH" CIPHER_SEC0;
+# endif
 	}
 	SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, SSLVerifyCallback);
 	SSL_CTX_set_options(ctx,
@@ -143,12 +140,7 @@ SetupSSL()
 }
 
 void
-#if PROTOTYPES
 AttemptSSL(CONSFILE *pcf)
-#else
-AttemptSSL(pcf)
-    CONSFILE *pcf;
-#endif
 {
     SSL *ssl;
 
@@ -180,12 +172,7 @@ gss_ctx_id_t secctx = GSS_C_NO_CONTEXT;
 gss_buffer_desc mytok = GSS_C_EMPTY_BUFFER;
 
 int
-#if PROTOTYPES
 CanGetGSSContext(const char *servername)
-#else
-CanGetGSSContext(servername)
-    const char *servername;
-#endif
 {
     char namestr[128];
     gss_buffer_desc namebuf, dbuf;
@@ -221,12 +208,7 @@ CanGetGSSContext(servername)
 }
 
 int
-#if PROTOTYPES
 AttemptGSSAPI(CONSFILE *pcf)
-#else
-AttemptGSSAPI(pcf)
-    CONSFILE *pcf;
-#endif
 {
     OM_uint32 stmaj, stmin;
     gss_buffer_desc servertok;
@@ -258,13 +240,7 @@ AttemptGSSAPI(pcf)
 /* output a control (or plain) character as a UNIX user would expect it	(ksb)
  */
 static void
-#if PROTOTYPES
 PutCtlc(int c, FILE *fp)
-#else
-PutCtlc(c, fp)
-    int c;
-    FILE *fp;
-#endif
 {
     if (0 != (0200 & c)) {
 	putc('M', fp);
@@ -286,12 +262,7 @@ PutCtlc(c, fp)
 /* output a long message to the user
  */
 static void
-#if PROTOTYPES
 Usage(int wantfull)
-#else
-Usage(wantfull)
-    int wantfull;
-#endif
 {
     static char *full[] = {
 	"7         strip the high bit off all console data",
@@ -314,6 +285,7 @@ Usage(wantfull)
 	"f(F)      force read/write connection (and replay)",
 	"h         output this message",
 	"i(I)      display status info in machine-parseable form (on master)",
+	"k         abort connection if the console is not 'up'",
 	"l user    use username instead of current username",
 	"M master  master server to poll first",
 	"n         do not read system-wide config file",
@@ -341,7 +313,7 @@ Usage(wantfull)
        %s [generic-args] [-iIuwWx] [console]\n\
        %s [generic-args] [-hPqQrRV] [-[bB] message] [-d [user][@console]]\n\
                               [-t [user][@console] message] [-[zZ] cmd]\n\n\
-       generic-args: [-7DEnUv] [-c cred] [-C config] [-M master]\n\
+       generic-args: [-7DEknUv] [-c cred] [-C config] [-M master]\n\
                      [-p port] [-l username]\n", progname, progname, progname);
 
     if (wantfull) {
@@ -355,11 +327,7 @@ Usage(wantfull)
 /* expain who we are and which revision we are				(ksb)
  */
 static void
-#if PROTOTYPES
-Version()
-#else
-Version()
-#endif
+Version(void)
 {
     int i;
     static STRING *acA1 = (STRING *)0;
@@ -377,9 +345,6 @@ Version()
 #if HAVE_GSSAPI
 	"gssapi",
 #endif
-#if HAVE_PAM
-	"pam",
-#endif
 #if USE_UNIX_DOMAIN_SOCKETS
 	"uds",
 #endif
@@ -393,12 +358,12 @@ Version()
 
     Msg(MyVersion());
 #if USE_UNIX_DOMAIN_SOCKETS
-    Msg("default socket directory `%s\'", UDSDIR);
+    Msg("default socket directory `%s'", UDSDIR);
 #else
-    Msg("default initial master server `%s\'", MASTERHOST);
+    Msg("default initial master server `%s'", MASTERHOST);
     Msg("default port referenced as `%s'", DEFPORT);
 #endif
-    Msg("default escape sequence `%s%s\'", FmtCtl(DEFATTN, acA1),
+    Msg("default escape sequence `%s%s'", FmtCtl(DEFATTN, acA1),
 	FmtCtl(DEFESC, acA2));
     Msg("default site-wide configuration in `%s'", CLIENTCONFIGFILE);
     Msg("default per-user configuration in `%s'", "$HOME/.consolerc");
@@ -422,12 +387,12 @@ Version()
     BuildStringChar('0' + DMALLOC_VERSION_MINOR, acA1);
     BuildStringChar('.', acA1);
     BuildStringChar('0' + DMALLOC_VERSION_PATCH, acA1);
-#if defined(DMALLOC_VERSION_BETA)
+# if defined(DMALLOC_VERSION_BETA)
     if (DMALLOC_VERSION_BETA != 0) {
 	BuildString("-b", acA1);
 	BuildStringChar('0' + DMALLOC_VERSION_BETA, acA1);
     }
-#endif
+# endif
     Msg("dmalloc version: %s", acA1->string);
 #endif
 #if HAVE_OPENSSL
@@ -445,12 +410,7 @@ Version()
  *	c			a plain character
  */
 static int
-#if PROTOTYPES
 ParseChar(char **ppcSrc, char *pcOut)
-#else
-ParseChar(ppcSrc, pcOut)
-    char **ppcSrc, *pcOut;
-#endif
 {
     int cvt, n;
     char *pcScan = *ppcSrc;
@@ -494,11 +454,7 @@ ParseChar(ppcSrc, pcOut)
 /*
  */
 static void
-#if PROTOTYPES
-ValidateEsc()
-#else
-ValidateEsc()
-#endif
+ValidateEsc(void)
 {
     unsigned char c1, c2;
 
@@ -521,12 +477,7 @@ ValidateEsc()
 /* find the two characters that makeup the users escape sequence	(ksb)
  */
 static void
-#if PROTOTYPES
 ParseEsc(char *pcText)
-#else
-ParseEsc(pcText)
-    char *pcText;
-#endif
 {
     char *pcTemp;
     char c1, c2;
@@ -551,30 +502,85 @@ ParseEsc(pcText)
  * as a side effect we set ThisHost to a short name for this host
  */
 CONSFILE *
-#if PROTOTYPES
 GetPort(char *pcToHost, unsigned short sPort)
-#else
-GetPort(pcToHost, sPort)
-    char *pcToHost;
-    unsigned short sPort;
-#endif
 {
     int s;
-#if USE_UNIX_DOMAIN_SOCKETS
+#if USE_IPV6
+    int error;
+    char host[NI_MAXHOST];
+    char serv[NI_MAXSERV];
+    struct addrinfo *ai, *rp, hints;
+#elif USE_UNIX_DOMAIN_SOCKETS
     struct sockaddr_un port;
     static STRING *portPath = (STRING *)0;
 #else
     struct hostent *hp = (struct hostent *)0;
     struct sockaddr_in port;
 #endif
-
-#if HAVE_MEMSET
-    memset((void *)(&port), '\000', sizeof(port));
-#else
-    bzero((char *)(&port), sizeof(port));
+#if HAVE_SETSOCKOPT
+    int one = 1;
 #endif
 
-#if USE_UNIX_DOMAIN_SOCKETS
+#if USE_IPV6
+# if HAVE_MEMSET
+    memset(&hints, 0, sizeof(hints));
+# else
+    bzero(&hints, sizeof(hints));
+# endif
+#else
+# if HAVE_MEMSET
+    memset((void *)(&port), '\000', sizeof(port));
+# else
+    bzero((char *)(&port), sizeof(port));
+# endif
+#endif
+
+#if USE_IPV6
+    hints.ai_flags = AI_ADDRCONFIG;
+    hints.ai_socktype = SOCK_STREAM;
+    snprintf(serv, sizeof(serv), "%hu", sPort);
+
+    error = getaddrinfo(pcToHost, serv, &hints, &ai);
+    if (error) {
+	Error("getaddrinfo(%s): %s", pcToHost, gai_strerror(error));
+	return (CONSFILE *)0;
+    }
+
+    rp = ai;
+    while (rp) {
+	error =
+	    getnameinfo(rp->ai_addr, rp->ai_addrlen, host, sizeof(host),
+			serv, sizeof(serv),
+			NI_NUMERICHOST | NI_NUMERICSERV);
+	if (error) {
+	    continue;
+	}
+	CONDDEBUG((1, "GetPort: hostname=%s, ip=%s, port=%s", pcToHost,
+		   host, serv));
+
+	/* set up the socket to talk to the server for all consoles
+	 * (it will tell us who to talk to to get a real connection)
+	 */
+	s = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+	if (s != -1) {
+# if HAVE_SETSOCKOPT
+	    if (setsockopt
+		(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&one,
+		 sizeof(one)) < 0)
+		goto fail;
+# endif
+	    if (connect(s, rp->ai_addr, rp->ai_addrlen) == 0)
+		goto success;
+	  fail:
+	    close(s);
+	}
+	rp = rp->ai_next;
+    }
+    Error("Unable to connect to %s:%s", host, serv);
+    return (CONSFILE *)0;
+  success:
+    freeaddrinfo(ai);
+#elif USE_UNIX_DOMAIN_SOCKETS
     if (portPath == (STRING *)0)
 	portPath = AllocString();
     BuildStringPrint(portPath, "%s/%hu", config->master, sPort);
@@ -642,10 +648,19 @@ GetPort(pcToHost, sPort)
 	Error("socket(AF_INET,SOCK_STREAM): %s", strerror(errno));
 	return (CONSFILE *)0;
     }
+# if HAVE_SETSOCKOPT
+    if (setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (char *)&one, sizeof(one))
+	< 0) {
+	Error("setsockopt(SO_KEEPALIVE): %s", strerror(errno));
+	close(s);
+	return (CONSFILE *)0;
+    }
+# endif
 
     if (connect(s, (struct sockaddr *)(&port), sizeof(port)) < 0) {
 	Error("connect(): %hu@%s: %s", ntohs(port.sin_port), pcToHost,
 	      strerror(errno));
+	close(s);
 	return (CONSFILE *)0;
     }
 #endif
@@ -667,11 +682,7 @@ static struct termios o_tios;
  * we really use cbreak at PUCC because we need even parity...
  */
 static void
-#if PROTOTYPES
-C2Raw()
-#else
-C2Raw()
-#endif
+C2Raw(void)
 {
     struct termios n_tios;
 
@@ -699,11 +710,7 @@ C2Raw()
  * put the tty back as it was, however that was
  */
 static void
-#if PROTOTYPES
-C2Cooked()
-#else
-C2Cooked()
-#endif
+C2Cooked(void)
 {
     if (!screwy)
 	return;
@@ -712,11 +719,7 @@ C2Cooked()
 }
 
 void
-#if PROTOTYPES
 DestroyDataStructures(void)
-#else
-DestroyDataStructures()
-#endif
 {
     C2Cooked();
     if (cfstdout != (CONSFILE *)0)
@@ -725,21 +728,17 @@ DestroyDataStructures()
     DestroyConfig(optConf);
     DestroyConfig(config);
     DestroyTerminal(pTerm);
+#if !USE_IPV6
     if (myAddrs != (struct in_addr *)0)
 	free(myAddrs);
+#endif
     DestroyStrings();
     if (substData != (SUBST *)0)
 	free(substData);
 }
 
 char *
-#if PROTOTYPES
 ReadReply(CONSFILE *fd, FLAG toEOF)
-#else
-ReadReply(fd, toEOF)
-    CONSFILE *fd;
-    FLAG toEOF;
-#endif
 {
     int nr;
     static char buf[1024];
@@ -791,11 +790,7 @@ ReadReply(fd, toEOF)
 }
 
 static void
-#if PROTOTYPES
 ReapVirt(void)
-#else
-ReapVirt()
-#endif
 {
     pid_t pid;
     int UWbuf;
@@ -836,12 +831,7 @@ static sig_atomic_t fSawReapVirt = 0;
 static
 #endif
   RETSIGTYPE
-#if PROTOTYPES
 FlagReapVirt(int sig)
-#else
-FlagReapVirt(sig)
-    int sig;
-#endif
 {
     fSawReapVirt = 1;
 #if !HAVE_SIGACTION
@@ -851,14 +841,11 @@ FlagReapVirt(sig)
 
 /* invoke the execcmd command */
 void
-#if PROTOTYPES
 ExecCmd(void)
-#else
-ExecCmd()
-#endif
 {
     int i;
     pid_t iNewGrp;
+    extern char **environ;
     int pin[2];
     int pout[2];
     static char *apcArgv[] = {
@@ -924,23 +911,31 @@ ExecCmd()
     /* setup new process with clean file descriptors
      * stderr still goes to stderr...so user sees it
      */
-    i = GetMaxFiles();
-    for ( /* i above */ ; --i > 3;) {
+#ifdef HAVE_CLOSEFROM
+    for (i = 3; i <= pout[0] || i <= pin[1]; i++) {
 	if (i != pout[0] && i != pin[1])
 	    close(i);
     }
+    closefrom(i);
+#else
+    i = GetMaxFiles();
+    for ( /* i above */ ; --i > 2;) {
+	if (i != pout[0] && i != pin[1])
+	    close(i);
+    }
+#endif
     close(1);
     close(0);
 
-# if HAVE_SETSID
+#if HAVE_SETSID
     iNewGrp = setsid();
     if (-1 == iNewGrp) {
 	Error("ExecCmd(): setsid(): %s", strerror(errno));
 	iNewGrp = thepid;
     }
-# else
+#else
     iNewGrp = thepid;
-# endif
+#endif
 
     if (dup(pout[0]) != 0 || dup(pin[1]) != 1) {
 	Error("ExecCmd(): fd sync error");
@@ -960,12 +955,7 @@ ExecCmd()
 }
 
 void
-#if PROTOTYPES
 GetUserInput(STRING *str)
-#else
-GetUserInput(str)
-    STRING *str;
-#endif
 {
     char c;
 
@@ -1011,12 +1001,7 @@ GetUserInput(str)
 }
 
 void
-#if PROTOTYPES
 DoExec(CONSFILE *pcf)
-#else
-DoExec(pcf)
-    CONSFILE *pcf;
-#endif
 {
     showExecData = 1;
     FileWrite(cfstdout, FLAGFALSE, "exec: ", 6);
@@ -1066,13 +1051,7 @@ DoExec(pcf)
 }
 
 void
-#if PROTOTYPES
 ExpandString(char *str, CONSFILE *c)
-#else
-ExpandString(str, c)
-    char *str;
-    CONSFILE *c;
-#endif
 {
     char s;
     short backslash = 0;
@@ -1162,15 +1141,7 @@ ExpandString(str, c)
 }
 
 void
-#if PROTOTYPES
 PrintSubst(CONSFILE *pcf, char *pcMach, char *string, char *subst)
-#else
-PrintSubst(pcf, pcMach, string, subst)
-    CONSFILE *pcf;
-    char *pcMach;
-    char *string;
-    char *subst;
-#endif
 {
     if (string == (char *)0)
 	return;
@@ -1189,13 +1160,7 @@ PrintSubst(pcf, pcMach, string, subst)
 }
 
 void
-#if PROTOTYPES
 Interact(CONSFILE *pcf, char *pcMach)
-#else
-Interact(pcf, pcMach)
-    CONSFILE *pcf;
-    char *pcMach;
-#endif
 {
     int i;
     int nc;
@@ -1418,14 +1383,8 @@ Interact(pcf, pcMach)
 /* interact with a group server					(ksb)
  */
 void
-#if PROTOTYPES
 CallUp(CONSFILE *pcf, char *pcMaster, char *pcMach, char *pcHow,
        char *result)
-#else
-CallUp(pcf, pcMaster, pcMach, pcHow, result)
-    CONSFILE *pcf;
-    char *pcMaster, *pcMach, *pcHow, *result;
-#endif
 {
     int fIn = '-';
     char *r = (char *)0;
@@ -1513,8 +1472,13 @@ CallUp(pcf, pcMaster, pcMach, pcHow, result)
     /* try to grok the state of the console */
     FilePrint(pcf, FLAGFALSE, "%c%c=", chAttn, chEsc);
     r = ReadReply(pcf, FLAGFALSE);
-    if (strncmp(r, "[unknown", 8) != 0 && strncmp(r, "[up]", 4) != 0)
+    if (strncmp(r, "[unknown", 8) != 0 && strncmp(r, "[up]", 4) != 0) {
 	FileWrite(cfstdout, FLAGFALSE, r, -1);
+	if (config->exitdown == FLAGTRUE) {
+	    Error("Console is not 'up'. Exiting. (-k)");
+	    Bye(EX_UNAVAILABLE);
+	}
+    }
 
     /* try to grok the version of the server */
     FilePrint(pcf, FLAGFALSE, "%c%c%c", chAttn, chEsc, 0xD6);
@@ -1609,14 +1573,7 @@ char *cmdarg = (char *)0;
  * and ask the machine master at pop.stat for more group leaders
  */
 int
-#if PROTOTYPES
 DoCmds(char *master, char *pports, int cmdi)
-#else
-DoCmds(master, pports, cmdi)
-    char *master;
-    char *pports;
-    int cmdi;
-#endif
 {
     CONSFILE *pcf;
     char *t;
@@ -1660,7 +1617,9 @@ DoCmds(master, pports, cmdi)
 #endif
 
 	if (*ports == '\000') {
-#if USE_UNIX_DOMAIN_SOCKETS
+#if USE_IPV6
+	    port = bindPort;
+#elif USE_UNIX_DOMAIN_SOCKETS
 	    port = 0;
 #else
 	    port = htons(bindPort);
@@ -1669,7 +1628,9 @@ DoCmds(master, pports, cmdi)
 	    Error("invalid port spec for %s: `%s'", serverName, ports);
 	    continue;
 	} else {
-#if USE_UNIX_DOMAIN_SOCKETS
+#if USE_IPV6
+	    port = (short)atoi(ports);
+#elif USE_UNIX_DOMAIN_SOCKETS
 	    port = (short)atoi(ports);
 #else
 	    port = htons((short)atoi(ports));
@@ -1808,6 +1769,12 @@ DoCmds(master, pports, cmdi)
 		}
 		FileWrite(pcf, FLAGFALSE, "exit\r\n", 6);
 		t = ReadReply(pcf, FLAGTRUE);
+	    } else if (interact == FLAGFALSE && result[0] == '[' &&
+		       cmdi > 0) {
+		FileClose(&pcf);
+		/* reconnect to same, but with the next command (info, examine, etc) */
+		DoCmds(master, pports, cmdi - 1);
+		break;
 	    } else {
 		/* if we're not trying to connect to a console */
 		if (interact == FLAGFALSE) {
@@ -1912,7 +1879,7 @@ DoCmds(master, pports, cmdi)
 	FileClose(&pcf);
 
 	/* this would only be true if we got extra redirects (@... above) */
-	if (cmds[cmdi][0] == 'c' && interact == FLAGTRUE)
+	if (cmds[cmdi][0] == 'c')
 	    DoCmds(server, result, cmdi);
 	else if (cmdi > 0)
 	    DoCmds(server, result, cmdi - 1);
@@ -1936,13 +1903,7 @@ DoCmds(master, pports, cmdi)
  * exit happy or sad
  */
 int
-#if PROTOTYPES
 main(int argc, char **argv)
-#else
-main(argc, argv)
-    int argc;
-    char **argv;
-#endif
 {
     char *pcCmd;
     struct passwd *pwdMe = (struct passwd *)0;
@@ -1950,13 +1911,15 @@ main(argc, argv)
     int fLocal;
     static STRING *acPorts = (STRING *)0;
     static char acOpts[] =
-	"7aAb:B:c:C:d:De:EfFhiIl:M:np:PqQrRsSt:uUvVwWxz:Z:";
+	"7aAb:B:c:C:d:De:EfFhikIl:M:np:PqQrRsSt:uUvVwWxz:Z:";
+    extern int optind;
+    extern int optopt;
+    extern char *optarg;
     static STRING *textMsg = (STRING *)0;
     int cmdi;
     static STRING *consoleName = (STRING *)0;
     short readSystemConf = 1;
     char *userConf = (char *)0;
-	char console_title[256];
     typedef struct zaps {
 	char *opt;
 	char *cmd;
@@ -2076,6 +2039,10 @@ main(argc, argv)
 		/* fall through */
 	    case 'i':
 		pcCmd = "info";
+		break;
+
+	    case 'k':
+		optConf->exitdown = FLAGTRUE;
 		break;
 
 	    case 'l':
@@ -2231,8 +2198,9 @@ main(argc, argv)
 	Version();
 	Bye(EX_OK);
     }
-
+#if !USE_IPV6
     ProbeInterfaces(INADDR_ANY);
+#endif
 
     if (readSystemConf)
 	ReadConf(CLIENTCONFIGFILE, FLAGFALSE);
@@ -2273,6 +2241,13 @@ main(argc, argv)
 	config->striphigh = pConfig->striphigh;
     else
 	config->striphigh = FLAGFALSE;
+
+    if (optConf->exitdown != FLAGUNKNOWN)
+	config->exitdown = optConf->exitdown;
+    else if (pConfig->exitdown != FLAGUNKNOWN)
+	config->exitdown = pConfig->exitdown;
+    else
+	config->exitdown = FLAGFALSE;
 
     if (optConf->escape != (char *)0)
 	ParseEsc(optConf->escape);
@@ -2374,12 +2349,7 @@ main(argc, argv)
 	if (cmdarg != (char *)0)
 	    free(cmdarg);
 	if ((cmdarg = StrDup(argv[optind++])) == (char *)0)
-	    {
 	    OutOfMem();
-		}
-		snprintf(console_title, sizeof(console_title), "Console: %s@%s", cmdarg, config->master); /* (config->username != NULL ? config->username : "") */
-		console_title[sizeof(console_title)-1] = '\0';
-		set_console_title(console_title);
     } else if (*pcCmd == 't') {
 	/* text message */
 	if (optind >= argc) {
@@ -2491,11 +2461,11 @@ main(argc, argv)
 #if defined(TIOCGWINSZ)
     if (interact == FLAGTRUE) {
 	int fd;
-#if HAVE_MEMSET
+# if HAVE_MEMSET
 	memset((void *)(&ws), '\000', sizeof(ws));
-#else
+# else
 	bzero((char *)(&ws), sizeof(ws));
-#endif
+# endif
 	if ((fd = open("/dev/tty", O_RDONLY)) != -1) {
 	    ioctl(fd, TIOCGWINSZ, &ws);
 	}

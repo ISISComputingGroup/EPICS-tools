@@ -1,6 +1,4 @@
 /*
- *  $Id: group.c,v 5.344 2013/09/26 17:50:24 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -56,11 +54,7 @@
 
 #include <pwd.h>
 #include <grp.h>
-#if PROTOTYPES
 #include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
 #include <arpa/telnet.h>
 
 #include <cutil.h>
@@ -72,9 +66,10 @@
 #include <master.h>
 #include <main.h>
 #include <version.h>
+#include <stdio.h>
 
 #if HAVE_PAM
-#include <security/pam_appl.h>
+# include <security/pam_appl.h>
 #endif
 
 
@@ -90,13 +85,7 @@ static unsigned long dmallocMarkClientConnection = 0;
 #endif
 
 void
-#if PROTOTYPES
 SendIWaitClientsMsg(CONSENT *pCE, char *message)
-#else
-SendIWaitClientsMsg(pCE, message)
-    CONSENT *pCE;
-    char *message;
-#endif
 {
     CONSCLIENT *pCL;
 
@@ -113,13 +102,7 @@ SendIWaitClientsMsg(pCE, message)
 }
 
 void
-#if PROTOTYPES
 SendClientsMsg(CONSENT *pCE, char *message)
-#else
-SendClientsMsg(pCE, message)
-    CONSENT *pCE;
-    char *message;
-#endif
 {
     CONSCLIENT *pCL;
 
@@ -135,14 +118,7 @@ SendClientsMsg(pCE, message)
 }
 
 void
-#if PROTOTYPES
 SendCertainClientsMsg(GRPENT *pGE, char *who, char *message)
-#else
-SendCertainClientsMsg(pGE, who, message)
-    GRPENT *pGE;
-    char *who;
-    char *message;
-#endif
 {
     CONSCLIENT *pCL;
     char *console = (char *)0;
@@ -170,13 +146,7 @@ SendCertainClientsMsg(pGE, who, message)
 }
 
 void
-#if PROTOTYPES
 SendAllClientsMsg(GRPENT *pGE, char *message)
-#else
-SendAllClientsMsg(pGE, message)
-    GRPENT *pGE;
-    char *message;
-#endif
 {
     CONSCLIENT *pCL;
 
@@ -192,11 +162,7 @@ SendAllClientsMsg(pGE, message)
 }
 
 void
-#if PROTOTYPES
 AbortAnyClientExec(CONSCLIENT *pCL)
-#else
-AbortAnyClientExec(pCL)
-#endif
 {
     if (pCL->iState == S_CEXEC) {
 	FileSetQuoteIAC(pCL->fd, FLAGFALSE);
@@ -207,13 +173,8 @@ AbortAnyClientExec(pCL)
     }
 }
 
-static int
-#if PROTOTYPES
+void
 StopTask(CONSENT *pCE)
-#else
-StopTask(pCE)
-    CONSENT *pCE;
-#endif
 {
     if (pCE->taskpid != 0) {
 	kill(pCE->taskpid, SIGHUP);
@@ -230,12 +191,7 @@ StopTask(pCE)
 }
 
 void
-#if PROTOTYPES
 ClientWantsWrite(CONSCLIENT *pCL)
-#else
-ClientWantsWrite(pCL)
-    CONSCLIENT *pCL;
-#endif
 {
     CONSENT *pCE;
 
@@ -271,15 +227,7 @@ ClientWantsWrite(pCL)
 }
 
 void
-#if PROTOTYPES
 DisconnectClient(GRPENT *pGE, CONSCLIENT *pCL, char *message, FLAG force)
-#else
-DisconnectClient(pGE, pCL, message, force)
-    GRPENT *pGE;
-    CONSCLIENT *pCL;
-    char *message;
-    FLAG force;
-#endif
 {
     CONSENT *pCEServing;
 
@@ -356,14 +304,7 @@ DisconnectClient(pGE, pCL, message, force)
 }
 
 int
-#if PROTOTYPES
 DisconnectCertainClients(GRPENT *pGE, char *admin, char *who)
-#else
-DisconnectCertainClients(pGE, admin, who)
-    GRPENT *pGE;
-    char *admin;
-    char *who;
-#endif
 {
     CONSCLIENT *pCL;
     char *console = (char *)0;
@@ -406,13 +347,7 @@ DisconnectCertainClients(pGE, admin, who)
 }
 
 void
-#if PROTOTYPES
 DisconnectAllClients(GRPENT *pGE, char *message)
-#else
-DisconnectAllClients(pGE, message)
-    GRPENT *pGE;
-    char *message;
-#endif
 {
     CONSCLIENT *pCL;
 
@@ -426,12 +361,7 @@ DisconnectAllClients(pGE, message)
 }
 
 void
-#if PROTOTYPES
 DestroyClient(CONSCLIENT *pCL)
-#else
-DestroyClient(pCL)
-    CONSCLIENT *pCL;
-#endif
 {
     if (pCL == (CONSCLIENT *)0)
 	return;
@@ -448,12 +378,7 @@ DestroyClient(pCL)
 }
 
 void
-#if PROTOTYPES
 DestroyConsentUsers(CONSENTUSERS **cu)
-#else
-DestroyConsentUsers(cu)
-    CONSENTUSERS **cu;
-#endif
 {
     CONSENTUSERS *n = (CONSENTUSERS *)0;
 
@@ -468,13 +393,7 @@ DestroyConsentUsers(cu)
 }
 
 CONSENTUSERS *
-#if PROTOTYPES
 ConsentFindUser(CONSENTUSERS *pCU, char *id)
-#else
-ConsentFindUser(pCU, id)
-    CONSENTUSERS *pCU;
-    char *id;
-#endif
 {
     short close = 0;
     struct group *g = (struct group *)0;
@@ -514,13 +433,7 @@ ConsentFindUser(pCU, id)
 }
 
 int
-#if PROTOTYPES
 ConsentUserOk(CONSENTUSERS *pCU, char *id)
-#else
-ConsentUserOk(pCU, id)
-    CONSENTUSERS *pCU;
-    char *id;
-#endif
 {
     CONSENTUSERS *c;
 
@@ -533,13 +446,7 @@ ConsentUserOk(pCU, id)
 
 /* check user permissions.  return 0 for r/w, 1 for r/o, -1 for none */
 int
-#if PROTOTYPES
 ClientAccess(CONSENT *pCE, char *user)
-#else
-ClientAccess(pCE, user)
-    CONSENT *pCE;
-    char *user;
-#endif
 {
     CONDDEBUG((1, "ClientAccess(): Authenticating user %s", user));
 
@@ -578,13 +485,7 @@ ClientAccess(pCE, user)
 }
 
 void
-#if PROTOTYPES
 DestroyConsent(GRPENT *pGE, CONSENT *pCE)
-#else
-DestroyConsent(pGE, pCE)
-    GRPENT *pGE;
-    CONSENT *pCE;
-#endif
 {
     CONSCLIENT *pCL;
     CONSENT **ppCE;
@@ -698,12 +599,7 @@ DestroyConsent(pGE, pCE)
 }
 
 void
-#if PROTOTYPES
 DestroyGroup(GRPENT *pGE)
-#else
-DestroyGroup(pGE)
-    GRPENT *pGE;
-#endif
 {
     CONSENT *pCEtmp, *pCE;
     CONSCLIENT *pCLtmp, *pCL;
@@ -742,16 +638,8 @@ DestroyGroup(pGE)
 
 #if HAVE_PAM
 int
-#if PROTOTYPES
-QuietConv(int num_msg, struct pam_message **msg,
+QuietConv(int num_msg, const struct pam_message **msg,
 	  struct pam_response **resp, void *appdata_ptr)
-#else
-QuietConv(num_msg, msg, resp, appdata_ptr)
-    int num_msg;
-    struct pam_message **msg;
-    struct pam_response **resp;
-    void *appdata_ptr;
-#endif
 {
     int i;
     struct pam_response *response = NULL;
@@ -806,14 +694,7 @@ QuietConv(num_msg, msg, resp, appdata_ptr)
  * given a special epass try it first.
  */
 int
-#if PROTOTYPES
 CheckPass(char *pcUser, char *pcWord, FLAG empty_check)
-#else
-CheckPass(pcUser, pcWord, empty_check)
-    char *pcUser;
-    char *pcWord;
-    FLAG empty_check;
-#endif
 {
     if (pcWord == (char *)0) {
 	pcWord = "";
@@ -865,12 +746,12 @@ CheckPass(pcUser, pcWord, empty_check)
     struct passwd *pwd;
     int retval = AUTH_SUCCESS;
     char *pass;
-#if HAVE_ISCOMSEC && HAVE_GETPRPWNAM
+# if HAVE_ISCOMSEC && HAVE_GETPRPWNAM
     struct pr_passwd *prpwd;
-#endif
-#if HAVE_GETSPNAM
+# endif
+# if HAVE_GETSPNAM
     struct spwd *spwd;
-#endif
+# endif
 
     if ((pwd = getpwnam(pcUser)) == (struct passwd *)0) {
 	CONDDEBUG((1, "CheckPass(): getpwnam(%s): %s", pcUser,
@@ -880,7 +761,7 @@ CheckPass(pcUser, pcWord, empty_check)
     }
     pass = pwd->pw_passwd;
 
-#if HAVE_ISCOMSEC && HAVE_GETPRPWNAM
+# if HAVE_ISCOMSEC && HAVE_GETPRPWNAM
     if (iscomsec()) {
 	CONDDEBUG((1, "CheckPass(): trusted password check"));
 	if ((prpwd = getprpwnam(pcUser)) == (struct pr_passwd *)0) {
@@ -891,9 +772,9 @@ CheckPass(pcUser, pcWord, empty_check)
 	}
 	pass = prpwd->ufld.fd_encrypt;
     }
-#endif
+# endif
 
-#if HAVE_GETSPNAM
+# if HAVE_GETSPNAM
     if ('x' == pass[0] && '\000' == pass[1]) {
 	CONDDEBUG((1, "CheckPass(): shadow password check"));
 	if ((spwd = getspnam(pcUser)) == (struct spwd *)0) {
@@ -904,7 +785,7 @@ CheckPass(pcUser, pcWord, empty_check)
 	}
 	pass = spwd->sp_pwdp;
     }
-#endif
+# endif
 
     if (pass[0] == '\000' && pcWord[0] == '\000') {
 	retval = AUTH_SUCCESS;	/* let empty password match */
@@ -917,11 +798,11 @@ CheckPass(pcUser, pcWord, empty_check)
 	else
 	    salt = pass;
 
-#if HAVE_ISCOMSEC && HAVE_BIGCRYPT
+# if HAVE_ISCOMSEC && HAVE_BIGCRYPT
 	if (iscomsec())
 	    encrypted = bigcrypt(pcWord, salt);
 	else
-#endif
+# endif
 	    encrypted = crypt(pcWord, salt);
 	if ((strcmp(pass, encrypted) != 0)) {
 	    CONDDEBUG((1, "CheckPass(): password check failed (%s)",
@@ -932,13 +813,13 @@ CheckPass(pcUser, pcWord, empty_check)
 
   finished_pass:
     endpwent();
-#if HAVE_ISCOMSEC && HAVE_GETPRPWNAM
+# if HAVE_ISCOMSEC && HAVE_GETPRPWNAM
     if (iscomsec())
 	endprpwent();
-#endif
-#if HAVE_GETSPNAM
+# endif
+# if HAVE_GETSPNAM
     endspent();
-#endif
+# endif
     return retval;
 #endif /* getpw*() */
 }
@@ -948,12 +829,7 @@ CheckPass(pcUser, pcWord, empty_check)
  * lucky for us: log file fd's can change async from the group driver!
  */
 static RETSIGTYPE
-#if PROTOTYPES
 FlagSawChldHUP(int sig)
-#else
-FlagSawChldHUP(sig)
-    int sig;
-#endif
 {
     fSawChldHUP = 1;
 #if !HAVE_SIGACTION
@@ -965,12 +841,7 @@ FlagSawChldHUP(sig)
  * lucky for us: log file fd's can change async from the group driver!
  */
 static RETSIGTYPE
-#if PROTOTYPES
 FlagSawChldUSR2(int sig)
-#else
-FlagSawChldUSR2(sig)
-    int sig;
-#endif
 {
     fSawChldUSR2 = 1;
 #if !HAVE_SIGACTION
@@ -979,12 +850,7 @@ FlagSawChldUSR2(sig)
 }
 
 void
-#if PROTOTYPES
 ConsoleError(CONSENT *pCE)
-#else
-ConsoleError(pCE)
-    CONSENT *pCE;
-#endif
 {
     if (pCE->autoreinit != FLAGTRUE) {
 	ConsDown(pCE, FLAGTRUE, FLAGTRUE);
@@ -1000,12 +866,7 @@ ConsoleError(pCE)
 }
 
 static void
-#if PROTOTYPES
 ReOpen(GRPENT *pGE)
-#else
-ReOpen(pGE)
-    GRPENT *pGE;
-#endif
 {
     CONSENT *pCE;
 
@@ -1030,12 +891,7 @@ ReOpen(pGE)
 }
 
 static RETSIGTYPE
-#if PROTOTYPES
 FlagReUp(int sig)
-#else
-FlagReUp(sig)
-    int sig;
-#endif
 {
     fSawReUp = 1;
 #if !HAVE_SIGACTION
@@ -1053,12 +909,7 @@ static struct delay {
  * the time when the next init should happen
  */
 static time_t
-#if PROTOTYPES
 InitDelay(CONSENT *pCE)
-#else
-InitDelay(pCE)
-    CONSENT *pCE;
-#endif
 {
     char *l;
     struct delay *d;
@@ -1080,12 +931,7 @@ InitDelay(pCE)
 }
 
 static void
-#if PROTOTYPES
 UpdateDelay(CONSENT *pCE)
-#else
-UpdateDelay(pCE)
-    CONSENT *pCE;
-#endif
 {
     char *l;
     struct delay *d;
@@ -1113,13 +959,7 @@ UpdateDelay(pCE)
 }
 
 static void
-#if PROTOTYPES
 ReUp(GRPENT *pGE, short automatic)
-#else
-ReUp(pGE, automatic)
-    GRPENT *pGE;
-    short automatic;
-#endif
 {
     CONSENT *pCE;
     int autoReUp;
@@ -1190,21 +1030,10 @@ ReUp(pGE, automatic)
 }
 
 void
-#if PROTOTYPES
 TagLogfile(const CONSENT *pCE, char *fmt, ...)
-#else
-TagLogfile(pCE, fmt, va_alist)
-    const CONSENT *pCE;
-    char *fmt;
-    va_dcl
-#endif
 {
     va_list ap;
-#if PROTOTYPES
     va_start(ap, fmt);
-#else
-    va_start(ap);
-#endif
 
     if ((pCE == (CONSENT *)0) || (pCE->fdlog == (CONSFILE *)0))
 	return;
@@ -1216,21 +1045,10 @@ TagLogfile(pCE, fmt, va_alist)
 }
 
 void
-#if PROTOTYPES
 TagLogfileAct(const CONSENT *pCE, char *fmt, ...)
-#else
-TagLogfileAct(pCE, fmt, va_alist)
-    const CONSENT *pCE;
-    char *fmt;
-    va_dcl
-#endif
 {
     va_list ap;
-#if PROTOTYPES
     va_start(ap, fmt);
-#else
-    va_start(ap);
-#endif
 
     if ((pCE == (CONSENT *)0) || (pCE->fdlog == (CONSFILE *)0) ||
 	(pCE->activitylog != FLAGTRUE))
@@ -1243,12 +1061,7 @@ TagLogfileAct(pCE, fmt, va_alist)
 }
 
 static void
-#if PROTOTYPES
 RollLogs(GRPENT *pGE)
-#else
-RollLogs(pGE)
-    GRPENT *pGE;
-#endif
 {
     CONSENT *pCE;
     struct stat stLog;
@@ -1353,12 +1166,7 @@ RollLogs(pGE)
 }
 
 static void
-#if PROTOTYPES
 Mark(GRPENT *pGE)
-#else
-Mark(pGE)
-    GRPENT *pGE;
-#endif
 {
     time_t tyme;
     CONSENT *pCE;
@@ -1400,14 +1208,7 @@ Mark(pGE)
 }
 
 void
-#if PROTOTYPES
 WriteLog(CONSENT *pCE, char *s, int len)
-#else
-WriteLog(pCE, s, len)
-    CONSENT *pCE;
-    char *s;
-    int len;
-#endif
 {
     int i = 0;
     int j;
@@ -1450,12 +1251,7 @@ WriteLog(pCE, s, len)
 }
 
 static RETSIGTYPE
-#if PROTOTYPES
 FlagGoAway(int sig)
-#else
-FlagGoAway(sig)
-    int sig;
-#endif
 {
     fSawGoAway = 1;
 #if !HAVE_SIGACTION
@@ -1465,12 +1261,7 @@ FlagGoAway(sig)
 
 /* yep, basically the same...ah well, maybe someday */
 static RETSIGTYPE
-#if PROTOTYPES
 FlagGoAwayAlso(int sig)
-#else
-FlagGoAwayAlso(sig)
-    int sig;
-#endif
 {
     fSawGoAway = 1;
 #if !HAVE_SIGACTION
@@ -1478,16 +1269,8 @@ FlagGoAwayAlso(sig)
 #endif
 }
 
-#if HAVE_SIGACTION
-static
-#endif
-  RETSIGTYPE
-#if PROTOTYPES
+static RETSIGTYPE
 FlagReapVirt(int sig)
-#else
-FlagReapVirt(sig)
-    int sig;
-#endif
 {
     fSawReapVirt = 1;
 #if !HAVE_SIGACTION
@@ -1498,13 +1281,7 @@ FlagReapVirt(sig)
 /* on a TERM we have to cleanup utmp entries (ask ptyd to do it)	(ksb)
  */
 void
-#if PROTOTYPES
 DeUtmp(GRPENT *pGE, int sfd)
-#else
-DeUtmp(pGE, sfd)
-    GRPENT *pGE;
-    int sfd;
-#endif
 {
     CONSENT *pCE;
 #if USE_UNIX_DOMAIN_SOCKETS
@@ -1542,12 +1319,7 @@ DeUtmp(pGE, sfd)
  * reader on the pseudo will cause us to notice the death in Kiddie...
  */
 static void
-#if PROTOTYPES
 ReapVirt(GRPENT *pGE)
-#else
-ReapVirt(pGE)
-    GRPENT *pGE;
-#endif
 {
     pid_t pid;
     int UWbuf;
@@ -1649,18 +1421,41 @@ ReapVirt(pGE)
 }
 
 int
-#if PROTOTYPES
 CheckPasswd(CONSCLIENT *pCL, char *pw_string, FLAG empty_check)
-#else
-CheckPasswd(pCL, pw_string, empty_check)
-    CONSCLIENT *pCL;
-    char *pw_string;
-    FLAG empty_check;
-#endif
 {
     FILE *fp;
     int iLine = 0;
     char *this_pw, *user;
+
+#if USE_UNIX_DOMAIN_SOCKETS
+# if TRUST_UDS_CRED
+    struct UDS_CRED_STYPE client_cred;
+    socklen_t client_cred_len = sizeof(client_cred);
+    memset(&client_cred, 0, sizeof(client_cred));
+    int err;
+
+    if ((err =
+	 getsockopt(pCL->fd->fd, SOL_SOCKET, UDS_CRED_SO, &client_cred,
+		    &client_cred_len)) == -1) {
+	Error("CheckPasswd(): getsockopt(CREDENTIALS) failed: %s",
+	      strerror(err));
+    } else if (client_cred.pid != 0) {
+	/* Does pCL->username->string and client_cred.uid match ? */
+	struct passwd *pwd = (struct passwd *)0;
+
+	/* we allow root to impersonate anyone */
+	if (client_cred.UDS_CRED_UID == 0)
+	    return AUTH_SUCCESS;
+
+	if ((pwd = getpwnam(pCL->username->string)) != NULL) {
+	    if (pwd->pw_uid == client_cred.UDS_CRED_UID) {
+		Verbose("user %s authenticated", pCL->username->string);
+		return AUTH_SUCCESS;
+	    }
+	}
+    }
+# endif
+#endif
 
     if ((fp = fopen(config->passwdfile, "r")) == (FILE *)0) {
 	if (CheckPass(pCL->username->string, pw_string, empty_check) ==
@@ -1721,12 +1516,7 @@ CheckPasswd(pCL, pw_string, empty_check)
 }
 
 static char *
-#if PROTOTYPES
 IdleTyme(long tyme)
-#else
-IdleTyme(tyme)
-    long tyme;
-#endif
 {
     long hours, minutes;
     static STRING *timestr = (STRING *)0;
@@ -1752,14 +1542,7 @@ IdleTyme(tyme)
 }
 
 void
-#if PROTOTYPES
 PutConsole(CONSENT *pCEServing, unsigned char c, int quote)
-#else
-PutConsole(pCEServing, c, quote)
-    CONSENT *pCEServing;
-    unsigned char c;
-    int quote;
-#endif
 {
     /* if we need to send an IAC char to a telnet-based port, quote
      * the thing (which means send two to the port).  but, since we're
@@ -1802,14 +1585,7 @@ PutConsole(pCEServing, c, quote)
 }
 
 void
-#if PROTOTYPES
 ExpandString(char *str, CONSENT *pCE, short breaknum)
-#else
-ExpandString(str, pCE, breaknum)
-    char *str;
-    CONSENT *pCE;
-    short breaknum;
-#endif
 {
     char s;
     short backslash = 0;
@@ -1857,7 +1633,9 @@ ExpandString(str, pCE, breaknum)
 		continue;
 	    } else if (s == 'd') {
 		PutConsole(pCE, IAC, 0);
-		PutConsole(pCE, '0' + breaknum, 0);
+		PutConsole(pCE,
+			   '0' + breaknum + (breaknum >
+					     9 ? BREAKALPHAOFFSET : 0), 0);
 		continue;
 	    } else if (s == 'z') {
 		PutConsole(pCE, IAC, 0);
@@ -1898,19 +1676,12 @@ ExpandString(str, pCE, breaknum)
 }
 
 void
-#if PROTOTYPES
 SendBreak(CONSCLIENT *pCLServing, CONSENT *pCEServing, short bt)
-#else
-SendBreak(pCLServing, pCEServing, bt)
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    short bt;
-#endif
 {
     CONSCLIENT *pCL;
 
     short waszero = 0;
-    if (bt < 0 || bt > 9) {
+    if (bt < 0 || bt > BREAKLISTSIZE) {
 	FileWrite(pCLServing->fd, FLAGFALSE, "aborted]\r\n", -1);
 	return;
     }
@@ -1960,31 +1731,25 @@ SendBreak(pCLServing, pCEServing, bt)
 
     if (pCEServing->breaklog == FLAGTRUE) {
 	if (waszero) {
-	    TagLogfile(pCEServing, "break #0(%d) sent -- `%s'", bt,
+	    TagLogfile(pCEServing, "break #0(%c) sent -- `%s'",
+		       '0' + bt + (bt > 9 ? BREAKALPHAOFFSET : 0),
 		       breakList[bt - 1].seq->string);
 	} else {
-	    TagLogfile(pCEServing, "break #%d sent -- `%s'", bt,
+	    TagLogfile(pCEServing, "break #%c sent -- `%s'",
+		       '0' + bt + (bt > 9 ? BREAKALPHAOFFSET : 0),
 		       breakList[bt - 1].seq->string);
 	}
     }
 }
 
 static int
-#if PROTOTYPES
 StartTask(CONSENT *pCE, char *cmd, uid_t uid, gid_t gid)
-#else
-StartTask(pCE, cmd, uid, gid)
-    CONSENT *pCE;
-    char *cmd;
-    uid_t uid;
-    gid_t gid;
-#endif
 {
     int i;
     extern char **environ;
     char *pcShell, **ppcArgv;
-    extern int FallBack PARAMS((char **, int *));
-    char *execSlave;		/* pseudo-device slave side             */
+    extern int FallBack(char **, int *);
+    char *execSlave = (char *)0;	/* pseudo-device slave side             */
     int execSlaveFD;		/* fd of slave side                     */
     int cofile;
 
@@ -2046,10 +1811,14 @@ StartTask(pCE, cmd, uid, gid)
 
     /* setup new process with clean file descriptors
      */
+#if HAVE_CLOSEFROM
+    closefrom(3);
+#else
     i = GetMaxFiles();
     for ( /* i above */ ; --i > 2;) {
 	close(i);
     }
+#endif
 
     if (geteuid() == 0) {
 	if (gid != 0)
@@ -2075,17 +1844,9 @@ StartTask(pCE, cmd, uid, gid)
 }
 
 void
-#if PROTOTYPES
 InvokeTask(CONSCLIENT *pCLServing, CONSENT *pCEServing, char id)
-#else
-InvokeTask(pCLServing, pCEServing, id)
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    char id;
-#endif
 {
     TASKS *t = (TASKS *)0;
-    int ret;
     char *cmd;
 
     if ((id < '0' || id > '9') && (id < 'a' || id > 'z')) {
@@ -2170,12 +1931,7 @@ InvokeTask(pCLServing, pCEServing, id)
 
 #if HAVE_OPENSSL
 int
-#if PROTOTYPES
 AttemptSSL(CONSCLIENT *pCL)
-#else
-AttemptSSL(pCL)
-    CONSCLIENT *pCL;
-#endif
 {
     int fdnum;
     SSL *ssl;
@@ -2205,12 +1961,7 @@ AttemptSSL(pCL)
 
 #if HAVE_GSSAPI
 int
-#if PROTOTYPES
 AttemptGSSAPI(CONSCLIENT *pCL)
-#else
-AttemptGSSAPI(pCL)
-    CONSCLIENT *pCL;
-#endif
 {
     int nr, ret = 0;
     char buf[1024];
@@ -2235,7 +1986,7 @@ AttemptGSSAPI(pCL)
 	    FileWrite(pCL->fd, FLAGFALSE, sendtok.value, sendtok.length);
 	    FileSetQuoteIAC(pCL->fd, FLAGTRUE);
 	    pCL->iState = S_NORMAL;
-	    gss_release_buffer(NULL, &sendtok);
+	    gss_release_buffer(&stmin, &sendtok);
 	    BuildString((char *)0, pCL->username);
 	    BuildString((char *)0, pCL->acid);
 	    stmaj = gss_display_name(&stmin, user, &dbuf, NULL);
@@ -2245,7 +1996,7 @@ AttemptGSSAPI(pCL)
 	    BuildStringChar('@', pCL->acid);
 	    BuildString(pCL->peername->string, pCL->acid);
 	    gss_release_name(&stmin, &user);
-	    gss_release_buffer(NULL, &dbuf);
+	    gss_release_buffer(&stmin, &dbuf);
 	    ret = 1;
 	    break;
 	case GSS_S_CREDENTIALS_EXPIRED:
@@ -2263,13 +2014,7 @@ AttemptGSSAPI(pCL)
 #endif
 
 CONSENT *
-#if PROTOTYPES
 HuntForConsole(GRPENT *pGE, char *name)
-#else
-HuntForConsole(pGE, name)
-    GRPENT *pGE;
-    char *name;
-#endif
 {
     /* try to find a given console
      * we assume all the right checks for ambiguity
@@ -2310,16 +2055,8 @@ HuntForConsole(pGE, name)
 }
 
 void
-#if PROTOTYPES
 CommandAttach(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	      long tyme)
-#else
-CommandAttach(pGE, pCLServing, pCEServing, tyme)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-#endif
 {
     CONSCLIENT *pCL;
 
@@ -2354,16 +2091,8 @@ CommandAttach(pGE, pCLServing, pCEServing, tyme)
 }
 
 void
-#if PROTOTYPES
 CommandChangeFlow(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 		  long tyme)
-#else
-CommandChangeFlow(pGE, pCLServing, pCEServing, tyme)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-#endif
 {
     struct termios sbuf;
     int cofile;
@@ -2399,16 +2128,8 @@ CommandChangeFlow(pGE, pCLServing, pCEServing, tyme)
 }
 
 void
-#if PROTOTYPES
 CommandDown(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	    long tyme)
-#else
-CommandDown(pGE, pCLServing, pCEServing, tyme)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-#endif
 {
     CONSCLIENT *pCL;
 
@@ -2438,17 +2159,8 @@ CommandDown(pGE, pCLServing, pCEServing, tyme)
 }
 
 void
-#if PROTOTYPES
 CommandExamine(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	       long tyme, char *args)
-#else
-CommandExamine(pGE, pCLServing, pCEServing, tyme, args)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-    char *args;
-#endif
 {
     CONSENT *pCE;
 
@@ -2472,6 +2184,13 @@ CommandExamine(pGE, pCLServing, pCEServing, tyme, args)
 		b = pCE->baud->acrate;
 		p = pCE->parity->key[0];
 		break;
+#if HAVE_FREEIPMI
+	    case IPMI:
+		d = BuildTmpStringPrint("%s", pCE->host);
+		b = "IPMI";
+		p = ' ';
+		break;
+#endif
 	    case HOST:
 		d = BuildTmpStringPrint("%s/%hu", pCE->host, pCE->netport);
 		b = "Netwk";
@@ -2499,16 +2218,8 @@ CommandExamine(pGE, pCLServing, pCEServing, tyme, args)
 }
 
 void
-#if PROTOTYPES
 CommandForce(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	     long tyme)
-#else
-CommandForce(pGE, pCLServing, pCEServing, tyme)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-#endif
 {
     CONSCLIENT *pCL;
 
@@ -2562,17 +2273,8 @@ CommandForce(pGE, pCLServing, pCEServing, tyme)
 }
 
 void
-#if PROTOTYPES
 CommandGroup(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	     long tyme, char *args)
-#else
-CommandGroup(pGE, pCLServing, pCEServing, tyme, args)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-    char *args;
-#endif
 {
     CONSCLIENT *pCL;
     CONSENT *pCE;
@@ -2596,17 +2298,8 @@ CommandGroup(pGE, pCLServing, pCEServing, tyme, args)
 }
 
 void
-#if PROTOTYPES
 CommandHosts(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	     long tyme, char *args)
-#else
-CommandHosts(pGE, pCLServing, pCEServing, tyme, args)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-    char *args;
-#endif
 {
     CONSENT *pCE;
 
@@ -2622,25 +2315,16 @@ CommandHosts(pGE, pCLServing, pCEServing, tyme, args)
 						  pCE->ioState == ISNORMAL)
 		  ? (pCE->initfile == (CONSFILE *)
 		     0 ? "up" : "init") : "down",
-		  pCE->pCLwr ? pCE->pCLwr->acid->string : pCE->
-		  pCLon ? "<spies>" : "<none>");
+		  pCE->pCLwr ? pCE->pCLwr->acid->
+		  string : pCE->pCLon ? "<spies>" : "<none>");
 	if (args != (char *)0)
 	    break;
     }
 }
 
 void
-#if PROTOTYPES
 CommandInfo(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	    long tyme, char *args)
-#else
-CommandInfo(pGE, pCLServing, pCEServing, tyme, args)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-    char *args;
-#endif
 {
     CONSENT *pCE;
     CONSCLIENT *pCL;
@@ -2662,6 +2346,12 @@ CommandInfo(pGE, pCLServing, pCEServing, tyme, args)
 			  (unsigned long)pCE->ipid, pCE->execSlave,
 			  FileFDNum(pCE->cofile));
 		break;
+#if HAVE_FREEIPMI
+	    case IPMI:
+		FilePrint(pCLServing->fd, FLAGTRUE, "@:%s,%d:", pCE->host,
+			  FileFDNum(pCE->cofile));
+		break;
+#endif
 	    case HOST:
 		FilePrint(pCLServing->fd, FLAGTRUE, "!:%s,%hu,%s,%d:",
 			  pCE->host, pCE->netport,
@@ -2734,20 +2424,24 @@ CommandInfo(pGE, pCLServing, pCEServing, tyme, args)
 	}
 	BuildTmpString((char *)0);
 	s = (char *)0;
-	if (pCE->hupcl == FLAGTRUE)
-	    s = BuildTmpString(",hupcl");
-	if (pCE->cstopb == FLAGTRUE)
-	    s = BuildTmpString(",cstopb");
-	if (pCE->ixon == FLAGTRUE)
-	    s = BuildTmpString(",ixon");
-	if (pCE->ixany == FLAGTRUE)
-	    s = BuildTmpString(",ixany");
-	if (pCE->ixoff == FLAGTRUE)
-	    s = BuildTmpString(",ixoff");
+	if (pCE->type == DEVICE) {
+	    if (pCE->hupcl == FLAGTRUE)
+		s = BuildTmpString(",hupcl");
+	    if (pCE->cstopb == FLAGTRUE)
+		s = BuildTmpString(",cstopb");
 #if defined(CRTSCTS)
-	if (pCE->crtscts == FLAGTRUE)
-	    s = BuildTmpString(",crtscts");
+	    if (pCE->crtscts == FLAGTRUE)
+		s = BuildTmpString(",crtscts");
 #endif
+	}
+	if (pCE->type == DEVICE || pCE->type == EXEC) {
+	    if (pCE->ixon == FLAGTRUE)
+		s = BuildTmpString(",ixon");
+	    if (pCE->ixany == FLAGTRUE)
+		s = BuildTmpString(",ixany");
+	    if (pCE->ixoff == FLAGTRUE)
+		s = BuildTmpString(",ixoff");
+	}
 	if (pCE->ondemand == FLAGTRUE)
 	    s = BuildTmpString(",ondemand");
 	if (pCE->reinitoncc == FLAGTRUE)
@@ -2772,16 +2466,8 @@ CommandInfo(pGE, pCLServing, pCEServing, tyme, args)
 }
 
 void
-#if PROTOTYPES
 CommandLogging(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	       long tyme)
-#else
-CommandLogging(pGE, pCLServing, pCEServing, tyme)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-#endif
 {
     if (pCLServing->fwr) {
 	pCEServing->nolog = !pCEServing->nolog;
@@ -2801,16 +2487,8 @@ CommandLogging(pGE, pCLServing, pCEServing, tyme)
 }
 
 void
-#if PROTOTYPES
 CommandOpen(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	    long tyme)
-#else
-CommandOpen(pGE, pCLServing, pCEServing, tyme)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-#endif
 {
     CONSCLIENT *pCL;
 
@@ -2847,16 +2525,8 @@ CommandOpen(pGE, pCLServing, pCEServing, tyme)
 }
 
 void
-#if PROTOTYPES
 CommandWho(GRPENT *pGE, CONSCLIENT *pCLServing, CONSENT *pCEServing,
 	   long tyme)
-#else
-CommandWho(pGE, pCLServing, pCEServing, tyme)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-    CONSENT *pCEServing;
-    long tyme;
-#endif
 {
     CONSCLIENT *pCL;
 
@@ -2871,12 +2541,7 @@ CommandWho(pGE, pCLServing, pCEServing, tyme)
 }
 
 char *
-#if PROTOTYPES
 TelOpt(int o)
-#else
-TelOpt(o)
-    int o;
-#endif
 {
     static char opt[128];
     char *telopts[] = {
@@ -2901,12 +2566,7 @@ TelOpt(o)
 }
 
 void
-#if PROTOTYPES
 DoConsoleRead(CONSENT *pCEServing)
-#else
-DoConsoleRead(pCEServing)
-    CONSENT *pCEServing;
-#endif
 {
     unsigned char acIn[BUFSIZ], acInOrig[BUFSIZ];
     int nr, i;
@@ -2919,6 +2579,7 @@ DoConsoleRead(pCEServing)
 	FD_CLR(cofile, &winit);
 	return;
     }
+
     /* read terminal line */
     if ((nr =
 	 FileRead(pCEServing->cofile, acInOrig, sizeof(acInOrig))) < 0) {
@@ -3113,15 +2774,10 @@ DoConsoleRead(pCEServing)
 }
 
 void
-#if PROTOTYPES
 DoTaskRead(CONSENT *pCEServing)
-#else
-DoTaskRead(pCEServing)
-    CONSENT *pCEServing;
-#endif
 {
     unsigned char acInOrig[BUFSIZ];
-    int nr, i, fd;
+    int nr, fd;
     CONSCLIENT *pCL;
 
     if (pCEServing->taskfile == (CONSFILE *)0)
@@ -3148,12 +2804,7 @@ DoTaskRead(pCEServing)
 }
 
 void
-#if PROTOTYPES
 DoCommandRead(CONSENT *pCEServing)
-#else
-DoCommandRead(pCEServing)
-    CONSENT *pCEServing;
-#endif
 {
     unsigned char acInOrig[BUFSIZ];
     int nr, i, fd;
@@ -3206,11 +2857,7 @@ unsigned char CM[] = {
 };
 
 unsigned char *
-#if PROTOTYPES
-Challenge()
-#else
-Challenge()
-#endif
+Challenge(void)
 {
     int i;
     static unsigned char **n = (unsigned char **)0;
@@ -3260,14 +2907,7 @@ typedef enum gatherType {
 } GATHERTYPE;
 
 int
-#if PROTOTYPES
 GatherLine(char c, int limit, GATHERTYPE g, CONSCLIENT *pCL)
-#else
-GatherLine(c, pCL)
-    char c;
-    GATHERTYPE g;
-    CONSCLIENT *pCL;
-#endif
 {
     if (c == '\r')
 	return 1;
@@ -3295,15 +2935,8 @@ GatherLine(c, pCL)
 }
 
 void
-#if PROTOTYPES
 DoClientRead(GRPENT *pGE, CONSCLIENT *pCLServing)
-#else
-DoClientRead(pGE, pCLServing)
-    GRPENT *pGE;
-    CONSCLIENT *pCLServing;
-#endif
 {
-    struct termios sbuf;
     CONSENT *pCEServing = pCLServing->pCEto;
     int nr, i, l;
     unsigned char acIn[BUFSIZ], acInOrig[BUFSIZ];
@@ -3690,8 +3323,9 @@ DoClientRead(pGE, pCLServing)
 				    pcArgs, pCLServing->acid->string);
 			    num =
 				DisconnectCertainClients(pGE,
-							 pCLServing->acid->
-							 string, pcArgs);
+							 pCLServing->
+							 acid->string,
+							 pcArgs);
 			    /* client expects this string to be formatted
 			     * in this way only.
 			     */
@@ -3895,7 +3529,8 @@ DoClientRead(pGE, pCLServing)
 		    case S_HALT1:	/* halt sequence? */
 			pCLServing->iState = S_NORMAL;
 			if (acIn[i] != '?' &&
-			    (acIn[i] < '0' || acIn[i] > '9')) {
+			    ((acIn[i] < '0' || acIn[i] > '9') &&
+			     (acIn[i] < 'a' || acIn[i] > 'z'))) {
 			    FileWrite(pCLServing->fd, FLAGFALSE,
 				      "aborted]\r\n", -1);
 			    continue;
@@ -3903,13 +3538,16 @@ DoClientRead(pGE, pCLServing)
 
 			if (acIn[i] == '?') {
 			    int i;
+			    int mod;
 			    FileWrite(pCLServing->fd, FLAGFALSE,
 				      "list]\r\n", -1);
 			    i = pCEServing->breakNum;
+			    mod = i > 9 ? BREAKALPHAOFFSET : 0;
 			    if (i == 0 || breakList[i - 1].seq->used <= 1
 				|| pCEServing->breaklist == (char *)0 ||
 				((char *)0 ==
-				 strchr(pCEServing->breaklist, '1' + i)
+				 strchr(pCEServing->breaklist,
+					'0' + i + mod)
 				 && (char *)0 ==
 				 strchr(pCEServing->breaklist, '*')))
 				FileWrite(pCLServing->fd, FLAGTRUE,
@@ -3925,10 +3563,12 @@ DoClientRead(pGE, pCLServing)
 					  acA1->string);
 			    }
 			    if (pCEServing->breaklist != (char *)0) {
-				for (i = 0; i < 9; i++) {
+				for (i = 0; i < BREAKLISTSIZE; i++) {
+				    char btc;
+				    mod = i > 8 ? BREAKALPHAOFFSET : 0;
+				    btc = '1' + i + mod;
 				    if ((char *)0 ==
-					strchr(pCEServing->breaklist,
-					       '1' + i)
+					strchr(pCEServing->breaklist, btc)
 					&& (char *)0 ==
 					strchr(pCEServing->breaklist, '*'))
 					continue;
@@ -3937,9 +3577,8 @@ DoClientRead(pGE, pCLServing)
 						  breakList[i].seq->used -
 						  1, acA1);
 					FilePrint(pCLServing->fd, FLAGTRUE,
-						  " %d - %3dms, `%s'\r\n",
-						  i + 1,
-						  breakList[i].delay,
+						  " %c - %3dms, `%s'\r\n",
+						  btc, breakList[i].delay,
 						  acA1->string);
 				    }
 				}
@@ -3948,7 +3587,10 @@ DoClientRead(pGE, pCLServing)
 				      0);
 			} else {
 			    if (pCLServing->fwr) {
-				int bt = acIn[i] - '0';
+				int bt =
+				    acIn[i] - '0' - (acIn[i] >
+						     '9' ? BREAKALPHAOFFSET
+						     : 0);
 				SendBreak(pCLServing, pCEServing, bt);
 			    } else
 				FileWrite(pCLServing->fd, FLAGFALSE,
@@ -4338,8 +3980,8 @@ DoClientRead(pGE, pCLServing)
 				    BumpClient(pCEServing, (char *)0);
 				    TagLogfileAct(pCEServing,
 						  "%s detached",
-						  pCLServing->acid->
-						  string);
+						  pCLServing->
+						  acid->string);
 				    FindWrite(pCEServing);
 				}
 				break;
@@ -4356,8 +3998,8 @@ DoClientRead(pGE, pCLServing)
 			    case '|':	/* wait for client */
 				if (!pCLServing->fwr ||
 				    ConsentUserOk(pLUList,
-						  pCLServing->username->
-						  string) == 1)
+						  pCLServing->
+						  username->string) == 1)
 				    goto unknownchar;
 				FileSetQuoteIAC(pCLServing->fd, FLAGFALSE);
 				FilePrint(pCLServing->fd, FLAGFALSE,
@@ -4434,12 +4076,7 @@ DoClientRead(pGE, pCLServing)
 }
 
 void
-#if PROTOTYPES
 FlushConsole(CONSENT *pCEServing)
-#else
-FlushConsole(pCEServing)
-    CONSENT *pCEServing;
-#endif
 {
     static STRING *buf = (STRING *)0;
     int offset = 0;
@@ -4518,7 +4155,8 @@ FlushConsole(pCEServing)
 	    unsigned char next =
 		(unsigned char)pCEServing->wbuf->string[offset + 1];
 	    if ((next >= '0' && next <= '9') ||
-		(next == BREAK && pCEServing->type != HOST)) {
+		(next >= 'a' && next <= 'z')
+		|| (next == BREAK && pCEServing->type != HOST)) {
 		CONDDEBUG((1, "Kiddie(): heavy IAC for [%s]",
 			   pCEServing->server));
 		offset += 2;
@@ -4549,10 +4187,13 @@ FlushConsole(pCEServing)
 		}
 
 		/* Do the operation */
-		if (next >= '0' && next <= '9') {
+		if ((next >= '0' && next <= '9') ||
+		    (next >= 'a' && next <= 'z')) {
 		    int delay = BREAKDELAYDEFAULT;
+		    int bnum =
+			next - '1' - (next > '9' ? BREAKALPHAOFFSET : 0);
 		    if (next != '0')
-			delay = breakList[next - '1'].delay;
+			delay = breakList[bnum].delay;
 		    /* in theory this sets the break length to whatever
 		     * the "default" break sequence is for the console.
 		     * but, i think it would be better to just use the
@@ -4570,24 +4211,42 @@ FlushConsole(pCEServing)
 		     }
 		     */
 		    CONDDEBUG((1,
-			       "Kiddie(): heavy IAC - doing usleep() for [%s] (break #%c - delay %dms)",
+			       "Kiddie(): heavy IAC - doing Sleep() for [%s] (break #%c - delay %dms)",
 			       pCEServing->server, next, delay));
 		    if (delay != 0)
-			usleep(delay * 1000);
+			Sleep(delay * 1000);
 		} else if (next == BREAK) {
 		    CONDDEBUG((1,
-			       "Kiddie(): heavy IAC - doing tcsendbreak() for [%s]",
+			       "Kiddie(): heavy IAC - sending break for [%s]",
 			       pCEServing->server));
-		    if (tcsendbreak(FileFDNum(pCEServing->cofile), 0)
-			== -1) {
-			if (pCEServing->pCLwr != (CONSCLIENT *)0)
-			    FileWrite(pCEServing->pCLwr->fd, FLAGFALSE,
-				      "[tcsendbreak() failed]\r\n", -1);
+#if HAVE_FREEIPMI
+		    if (pCEServing->type == IPMI) {
+			if (ipmiconsole_ctx_generate_break
+			    (pCEServing->ipmictx) == -1) {
+			    if (pCEServing->pCLwr != (CONSCLIENT *)0)
+				FilePrint(pCEServing->pCLwr->fd, FLAGFALSE,
+					  "[ipmiconsole_ctx_generate_break() failed: %s]\r\n",
+					  ipmiconsole_ctx_errormsg
+					  (pCEServing->ipmictx));
+
+			}
+		    } else {
+#endif
+
+			if (tcsendbreak(FileFDNum(pCEServing->cofile), 0)
+			    == -1) {
+			    if (pCEServing->pCLwr != (CONSCLIENT *)0)
+				FileWrite(pCEServing->pCLwr->fd, FLAGFALSE,
+					  "[tcsendbreak() failed]\r\n",
+					  -1);
+			}
+#if HAVE_FREEIPMI
 		    }
+#endif
 		}
 		/* we do this 'cause we just potentially paused for
 		 * a half-second doing a break...or even the
-		 * intentional usleep().  we could take out the
+		 * intentional Sleep().  we could take out the
 		 * justHadDelay bits and continue with the stream,
 		 * but this allows us to process other consoles and
 		 * then come around and do more on this one.  you
@@ -4712,13 +4371,7 @@ FlushConsole(pCEServing)
  *		
  */
 static void
-#if PROTOTYPES
 Kiddie(GRPENT *pGE, int sfd)
-#else
-Kiddie(pGE, sfd)
-    GRPENT *pGE;
-    int sfd;
-#endif
 {
     CONSCLIENT *pCL,		/* console we must scan/notify          */
      *pCLServing;		/* client we are serving                */
@@ -5008,68 +4661,101 @@ Kiddie(pGE, sfd)
 		continue;
 	    switch (pCEServing->ioState) {
 		case INCONNECT:
-		    /* deal with this state above as well */
-		    if (FileCanWrite(pCEServing->cofile, &rmask, &wmask)) {
-			socklen_t slen;
-			int flags = 0;
-			int cofile = FileFDNum(pCEServing->cofile);
-			slen = sizeof(flags);
-			/* So, getsockopt seems to return -1 if there is
-			 * something interesting in SO_ERROR under
-			 * solaris...sheesh.  So, the error message has
-			 * the small change it's not accurate.
-			 */
-			if (getsockopt
-			    (cofile, SOL_SOCKET, SO_ERROR, (char *)&flags,
-			     &slen) < 0) {
-			    Error
-				("[%s] getsockopt(%u,SO_ERROR): %s: forcing down",
-				 pCEServing->server, cofile,
-				 strerror(errno));
-			    /* no ConsoleError() for same reason as above */
-			    SendIWaitClientsMsg(pCEServing, "down]\r\n");
-			    ConsDown(pCEServing, FLAGTRUE, FLAGTRUE);
+#if HAVE_FREEIPMI
+		    if (pCEServing->type == IPMI) {
+			if (FileCanRead
+			    (pCEServing->cofile, &rmask, &wmask)) {
+			    if (IPMICONSOLE_CTX_STATUS_SOL_ESTABLISHED ==
+				ipmiconsole_ctx_status
+				(pCEServing->ipmictx)) {
+				/* Read in the NULL from OUTPUT_ON_SOL_ESTABLISHED flag */
+				char b[1];
+				FileRead(pCEServing->cofile, b, 1);	/* trust it's NULL */
+			    } else {
+				Error("[%s] IPMI error: %s: forcing down",
+				      pCEServing->server,
+				      ipmiconsole_ctx_errormsg(pCEServing->
+							       ipmictx));
+				/* no ConsoleError() for same reason as above */
+				SendIWaitClientsMsg(pCEServing,
+						    "down]\r\n");
+				ConsDown(pCEServing, FLAGTRUE, FLAGTRUE);
+				break;
+			    }
+			} else
 			    break;
-			}
-			if (flags != 0) {
-			    Error("[%s] connect(%u): %s: forcing down",
-				  pCEServing->server, cofile,
-				  strerror(flags));
-			    /* no ConsoleError() for same reason as above */
-			    SendIWaitClientsMsg(pCEServing, "down]\r\n");
-			    ConsDown(pCEServing, FLAGTRUE, FLAGTRUE);
+		    } else {
+#endif /* freeipmi */
+			/* deal with this state above as well */
+			if (FileCanWrite
+			    (pCEServing->cofile, &rmask, &wmask)) {
+			    socklen_t slen;
+			    int flags = 0;
+			    int cofile = FileFDNum(pCEServing->cofile);
+			    slen = sizeof(flags);
+			    /* So, getsockopt seems to return -1 if there is
+			     * something interesting in SO_ERROR under
+			     * solaris...sheesh.  So, the error message has
+			     * the small change it's not accurate.
+			     */
+			    if (getsockopt
+				(cofile, SOL_SOCKET, SO_ERROR,
+				 (char *)&flags, &slen) < 0) {
+				Error
+				    ("[%s] getsockopt(%u,SO_ERROR): %s: forcing down",
+				     pCEServing->server, cofile,
+				     strerror(errno));
+				/* no ConsoleError() for same reason as above */
+				SendIWaitClientsMsg(pCEServing,
+						    "down]\r\n");
+				ConsDown(pCEServing, FLAGTRUE, FLAGTRUE);
+				break;
+			    }
+			    if (flags != 0) {
+				Error("[%s] connect(%u): %s: forcing down",
+				      pCEServing->server, cofile,
+				      strerror(flags));
+				/* no ConsoleError() for same reason as above */
+				SendIWaitClientsMsg(pCEServing,
+						    "down]\r\n");
+				ConsDown(pCEServing, FLAGTRUE, FLAGTRUE);
+				break;
+			    }
+
+			    /* waiting for a connect(), we watch the write bit,
+			     * so switch around and now watch for the read and
+			     * start gathering data
+			     */
+			    FD_SET(cofile, &rinit);
+			    FD_CLR(cofile, &winit);
+			} else
 			    break;
-			}
-			pCEServing->ioState = ISNORMAL;
-			pCEServing->lastWrite = time((time_t *)0);
-#if HAVE_GETTIMEOFDAY
-			if (gettimeofday(&tv, (void *)0) == 0)
-			    pCEServing->lastInit = tv;
-#else
-			if ((tv = time((time_t *)0)) != (time_t)-1)
-			    pCEServing->lastInit = tv;
-#endif
-			/* waiting for a connect(), we watch the write bit,
-			 * so switch around and now watch for the read and
-			 * start gathering data
-			 */
-			FD_SET(cofile, &rinit);
-			FD_CLR(cofile, &winit);
-			if (pCEServing->idletimeout != (time_t)0 &&
-			    (timers[T_CIDLE] == (time_t)0 ||
-			     timers[T_CIDLE] >
-			     pCEServing->lastWrite +
-			     pCEServing->idletimeout))
-			    timers[T_CIDLE] =
-				pCEServing->lastWrite +
-				pCEServing->idletimeout;
-			if (pCEServing->downHard == FLAGTRUE) {
-			    Msg("[%s] console up", pCEServing->server);
-			    pCEServing->downHard = FLAGFALSE;
-			}
-			SendIWaitClientsMsg(pCEServing, "up]\r\n");
-			StartInit(pCEServing);
+#if HAVE_FREEIPMI
 		    }
+#endif
+
+		    pCEServing->ioState = ISNORMAL;
+		    pCEServing->lastWrite = time((time_t *)0);
+#if HAVE_GETTIMEOFDAY
+		    if (gettimeofday(&tv, (void *)0) == 0)
+			pCEServing->lastInit = tv;
+#else
+		    if ((tv = time((time_t *)0)) != (time_t)-1)
+			pCEServing->lastInit = tv;
+#endif
+		    if (pCEServing->idletimeout != (time_t)0 &&
+			(timers[T_CIDLE] == (time_t)0 ||
+			 timers[T_CIDLE] >
+			 pCEServing->lastWrite + pCEServing->idletimeout))
+			timers[T_CIDLE] =
+			    pCEServing->lastWrite +
+			    pCEServing->idletimeout;
+		    if (pCEServing->downHard == FLAGTRUE) {
+			Msg("[%s] console up", pCEServing->server);
+			pCEServing->downHard = FLAGFALSE;
+		    }
+		    SendIWaitClientsMsg(pCEServing, "up]\r\n");
+		    StartInit(pCEServing);
 		    break;
 		case ISNORMAL:
 		    if (FileCanRead(pCEServing->cofile, &rmask, &wmask))
@@ -5180,8 +4866,8 @@ Kiddie(pGE, sfd)
 			CONDDEBUG((1, "Kiddie(): flushing fd %d",
 				   FileFDNum(pCLServing->fd)));
 			if (FileWrite
-			    (pCLServing->fd, FLAGFALSE, (char *)0,
-			     0) < 0) {
+			    (pCLServing->fd, FLAGFALSE, (char *)0, 0)
+			    < 0) {
 			    DisconnectClient(pGE, pCLServing, (char *)0,
 					     FLAGTRUE);
 			    break;
@@ -5224,7 +4910,7 @@ Kiddie(pGE, sfd)
 #if HAVE_DMALLOC && DMALLOC_MARK_CLIENT_CONNECTION
 	dmallocMarkClientConnection = dmalloc_mark();
 #endif
-	so = sizeof(struct sockaddr_in);
+	so = sizeof(INADDR_STYPE);
 	fd = accept(sfd, (struct sockaddr *)&pGE->pCLfree->cnct_port, &so);
 	if (fd < 0) {
 	    Error("Kiddie(): accept(): %s", strerror(errno));
@@ -5336,36 +5022,133 @@ Kiddie(pGE, sfd)
  * fork off a process for each group with an open socket for connections
  */
 void
-#if PROTOTYPES
 Spawn(GRPENT *pGE, int msfd)
-#else
-Spawn(pGE, msfd)
-    GRPENT *pGE;
-    int msfd;
-#endif
 {
     pid_t pid;
     int sfd;
-#if USE_UNIX_DOMAIN_SOCKETS
-    struct sockaddr_un lstn_port;
-    static STRING *portPath = (STRING *)0;
-#else
+#if USE_IPV6 || !USE_UNIX_DOMAIN_SOCKETS
+# if USE_IPV6
+    int error;
+    struct addrinfo *rp, hints, *res;
+    char host[NI_MAXHOST];
+    char serv[NI_MAXSERV];
+    unsigned short bindBasePort;
+# else
     socklen_t so;
+    struct sockaddr_in lstn_port;
+# endif
 # if HAVE_SETSOCKOPT
     int true = 1;
 # endif
     unsigned short portInc = 0;
-    struct sockaddr_in lstn_port;
-#endif
-
-    /* get a socket for listening */
-#if HAVE_MEMSET
-    memset((void *)&lstn_port, 0, sizeof(lstn_port));
 #else
-    bzero((char *)&lstn_port, sizeof(lstn_port));
+    struct sockaddr_un lstn_port;
+    static STRING *portPath = (STRING *)0;
 #endif
 
-#if USE_UNIX_DOMAIN_SOCKETS
+#if !USE_IPV6
+    /* get a socket for listening */
+# if HAVE_MEMSET
+    memset((void *)&lstn_port, 0, sizeof(lstn_port));
+# else
+    bzero((char *)&lstn_port, sizeof(lstn_port));
+# endif
+#endif
+
+#if USE_IPV6
+    for (rp = bindBaseAddr; rp != NULL; rp = rp->ai_next) {
+	if ((sfd =
+	     socket(rp->ai_family, rp->ai_socktype,
+		    rp->ai_protocol)) < 0) {
+	    Error("Spawn(): socket(): %s", strerror(errno));
+	    continue;
+	}
+# if HAVE_SETSOCKOPT
+	if (setsockopt
+	    (sfd, SOL_SOCKET, SO_REUSEADDR, (char *)&true,
+	     sizeof(true)) < 0) {
+	    Error("Spawn(): setsockopt(%u,SO_REUSEADDR): %s", sfd,
+		  strerror(errno));
+	    return;
+	}
+# endif
+	if (!SetFlags(sfd, O_NONBLOCK, 0))
+	    return;
+
+	error =
+	    getnameinfo(rp->ai_addr, rp->ai_addrlen, host, sizeof(host),
+			serv, sizeof(serv),
+			NI_NUMERICHOST | NI_NUMERICSERV);
+	if (error) {
+	    Error("Spawn(): getnameinfo failed: %s", gai_strerror(error));
+	    return;
+	}
+	bindBasePort = (unsigned short)strtol(serv, NULL, 10);
+
+	while (bind(sfd, rp->ai_addr, rp->ai_addrlen) < 0) {
+	    if (bindBasePort && (
+# if defined(EADDRINUSE)
+				    (errno == EADDRINUSE) ||
+# endif
+				    (errno == EACCES)) && ++portInc) {
+		/*
+		 * instead of checking for ai_family and modifying
+		 * the structure directly we will generate new addrinfo
+		 * structure, copy over first entry and release it.
+		 */
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_family = AF_UNSPEC;
+		hints.ai_socktype = SOCK_STREAM;
+		hints.ai_flags =
+		    AI_PASSIVE | AI_NUMERICHOST | AI_NUMERICSERV;
+		snprintf(serv, sizeof(serv), "%hu",
+			 (short)(bindBasePort + portInc));
+		error = getaddrinfo(host, serv, &hints, &res);
+		if (error)
+		    goto OUT;
+
+		memcpy(rp->ai_addr, res->ai_addr, rp->ai_addrlen);
+		freeaddrinfo(res);
+		continue;
+	    } else
+		goto OUT;
+	}
+	break;			/* if we're here bind was succesful so get out */
+
+      OUT:
+	portInc = 0;
+	close(sfd);
+    }
+
+    /* if rp is null we did not bind */
+    if (rp == NULL) {
+	Error("Spawn(): could not bind");
+	Bye(EX_OSERR);
+    }
+
+    if (-1 == getsockname(sfd, rp->ai_addr, &rp->ai_addrlen)) {
+	Error("Spawn(): getsockname(%u): %s", sfd, strerror(errno));
+	Bye(EX_OSERR);
+    }
+
+    /* 
+     * if bindBasePort is 0 we did auto-assign our port. to find out
+     * what we bind to we need to call getsockname (above) and call
+     * getnameinfo again. otherwise we have the port info in
+     * bindBasePort + portInc
+     */
+    if (!bindBasePort) {
+	error =
+	    getnameinfo(rp->ai_addr, rp->ai_addrlen, NULL, 0, serv,
+			sizeof(serv), NI_NUMERICSERV);
+	if (error) {
+	    Error("Spawn(): getnameinfo failed: %s", gai_strerror(error));
+	    Bye(EX_OSERR);
+	}
+	pGE->port = (unsigned short)strtol(serv, NULL, 10);
+    } else
+	pGE->port = bindBasePort + portInc;
+#elif USE_UNIX_DOMAIN_SOCKETS
     lstn_port.sun_family = AF_UNIX;
 
     if (portPath == (STRING *)0)
@@ -5394,6 +5177,11 @@ Spawn(pGE, msfd)
 	      strerror(errno));
 	Bye(EX_OSERR);
     }
+# ifdef TRUST_UDS_CRED
+    /* Allow everyone to connect, but we later auth them via SO_PEERCRED */
+    chmod(lstn_port.sun_path, 0666);
+# endif
+
     pGE->port = pGE->id;
 #else
     lstn_port.sin_family = AF_INET;
@@ -5409,7 +5197,8 @@ Spawn(pGE, msfd)
     }
 # if HAVE_SETSOCKOPT
     if (setsockopt
-	(sfd, SOL_SOCKET, SO_REUSEADDR, (char *)&true, sizeof(true)) < 0) {
+	(sfd, SOL_SOCKET, SO_REUSEADDR, (char *)&true, sizeof(true))
+	< 0) {
 	Error("Spawn(): setsockopt(%u,SO_REUSEADDR): %s", sfd,
 	      strerror(errno));
 	Bye(EX_OSERR);
@@ -5461,7 +5250,7 @@ Spawn(pGE, msfd)
 	     * possibly opens another socket to the port.  this really is only
 	     * an issue if you use the same port with -p and -b, i think.
 	     */
-	    usleep(750000);	/* pause 0.75 sec to throttle startup a bit */
+	    Sleep(750000);	/* pause 0.75 sec to throttle startup a bit */
 	    pGE->pid = pid;
 	    return;
 	case 0:

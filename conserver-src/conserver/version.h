@@ -1,6 +1,4 @@
 /*
- *  $Id: version.h,v 1.78 2013/09/13 20:54:09 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -14,8 +12,9 @@
 @(#) Copyright 2000 conserver.com.\n\
 All rights reserved.\n"
 
+#define VERSION_DATE	"2020/10/19"
 #define VERSION_MAJOR	8
-#define VERSION_MINOR	1
-#define VERSION_REV	19
+#define VERSION_MINOR	2
+#define VERSION_REV	6
 #define VERSION_TEXT	"conserver.com version"
 #define VERSION_UINT	(VERSION_MAJOR * 1000000 + VERSION_MINOR * 1000 + VERSION_REV)

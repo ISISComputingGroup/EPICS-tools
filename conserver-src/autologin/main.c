@@ -20,9 +20,7 @@ static int
  * does +arg if you give a last argument of "+", else give (char *)0
  */
 static int
-getopt(nargc, nargv, ostr)
-    int nargc;
-    char **nargv, *ostr;
+getopt(int nargc, char **nargv, char *ostr)
 {
     register char *oli;		/* option letter list index     */
     static char EMSG[] = "";	/* just a null place            */
@@ -83,45 +81,42 @@ getopt(nargc, nargv, ostr)
 #endif /* ! HAVE_GETOPT */
 
 char
- *progname =
-    "$Id: main.c,v 1.2 2013/09/20 21:15:13 bryan Exp $", *au_terse[] = {
+ *progname = "", *au_terse[] = {
     " [-u] [-c cmd] [-e env=value] [-g group] [-l login] [-t tty]",
     " -h",
     " -V",
     (char *)0
 }, *u_help[] = {
-"c cmd       command to run",
-	"e env=value environment variable to set",
-	"g group     initial group",
-	"h           print this help message",
-	"l login     login name",
-	"t tty       attach to this terminal",
-	"u           do no make utmp entry",
-	"V           show version information", (char *)0}, *pcCommand =
-    (char *)0, *pcGroup = (char *)0, *pcLogin = (char *)0, *pcTty =
-    (char *)0;
+
+    "c cmd       command to run",
+    "e env=value environment variable to set",
+    "g group     initial group",
+    "h           print this help message",
+    "l login     login name",
+    "t tty       attach to this terminal",
+    "u           do no make utmp entry",
+    "V           show version information", (char *)0
+}, *pcCommand = (char *)0, *pcGroup = (char *)0, *pcLogin =
+    (char *)0, *pcTty = (char *)0;
 int
   fMakeUtmp = 1, iErrs = 0;
 
 #ifndef u_terse
-#define u_terse	(au_terse[0])
+# define u_terse	(au_terse[0])
 #endif
-
-static char *rcsid = "$Id: main.c,v 1.2 2013/09/20 21:15:13 bryan Exp $";
 
 /*
  * parser
  */
 int
-main(argc, argv)
-    int argc;
-    char **argv;
+main(int argc, char **argv)
 {
     static char
       sbOpt[] = "c:e:g:hl:t:uV", *u_pch = (char *)0;
     static int
       u_loop = 0;
     register int u_curopt;
+    extern int atoi();
 
     progname = strrchr(argv[0], '/');
     if ((char *)0 == progname)
@@ -177,7 +172,7 @@ main(argc, argv)
 		fMakeUtmp = 0;
 		continue;
 	    case 'V':
-		printf("%s: %s\n", progname, rcsid);
+		printf("%s\n", progname);
 		exit(0);
 	}
 	break;

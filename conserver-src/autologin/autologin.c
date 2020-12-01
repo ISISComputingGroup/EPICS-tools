@@ -34,13 +34,13 @@
  * to change the /etc/security/audit_event line.
  */
 
-#define	AUE_autologin			32900
+# define	AUE_autologin			32900
 
-#include <sys/unistd.h>
-#include <netdb.h>
-#include <bsm/audit.h>
-#include <bsm/libbsm.h>
-#include <libintl.h>
+# include <sys/unistd.h>
+# include <netdb.h>
+# include <bsm/audit.h>
+# include <bsm/libbsm.h>
+# include <libintl.h>
 #endif
 
 #include <compat.h>
@@ -68,9 +68,6 @@
  * Global variables
  */
 
-#ifndef	lint
-char *rcsid = "$Id: autologin.c,v 1.27 2013/09/20 21:15:13 bryan Exp $";
-#endif /* not lint */
 extern char *progname;
 gid_t awGrps[NGROUPS_MAX];
 int iGrps = 0;
@@ -79,12 +76,14 @@ int iGrps = 0;
  * External variables
  */
 
+extern int optind;
+extern char *optarg;
 
 void make_utmp();
 void usage();
 
 int
-Process()
+Process(void)
 {
     int iErrs = 0;
     int i, iNewGrp;
@@ -207,9 +206,13 @@ Process()
 
     /* Close open files
      */
+#if HAVE_CLOSEFROM
+    closefrom((char *)0 == pcTty ? 3 : 0);
+#else
     for (i = (char *)0 == pcTty ? 3 : 0; i < getdtablesize(); ++i) {
 	(void)close(i);
     }
+#endif
 
     /* Make us a session leader so that when we open /dev/tty
      * it will become our controlling terminal.
@@ -390,6 +393,7 @@ Process()
 #endif
 
     if (fMakeUtmp) {
+	extern char *ttyname();
 	make_utmp(pcLogin, (char *)0 != pcTty ? pcTty : ttyname(0));
     }
     /* Change ownership and modes on the tty.
@@ -408,8 +412,7 @@ Process()
 
 #ifndef HAVE_PUTENV
 int
-putenv(pcAssign)
-    char *pcAssign;
+putenv(char *pcAssign)
 {
     register char *pcEq;
 
@@ -424,8 +427,7 @@ putenv(pcAssign)
 #endif
 
 int
-addgroup(pcGrp)
-    char *pcGrp;
+addgroup(char *pcGrp)
 {
     struct group *grp;
 
@@ -448,9 +450,7 @@ addgroup(pcGrp)
 /* install a utmp entry to show the use we know is here is here		(ksb)
  */
 void
-make_utmp(pclogin, pctty)
-    char *pclogin;
-    char *pctty;
+make_utmp(char *pclogin, char *pctty)
 {
     register int iFound, iPos;
     register int fdUtmp;
@@ -510,7 +510,7 @@ make_utmp(pclogin, pctty)
 	(void)strncpy(utmp.ut_line, pcDev, sizeof(utmp.ut_line));
     }
 #else
-#ifdef HAVE_SETTTYENT
+# ifdef HAVE_SETTTYENT
     {
 	register struct ttyent *ty;
 
@@ -531,7 +531,7 @@ make_utmp(pclogin, pctty)
     (void)strncpy(utmp.ut_line, pcDev, sizeof(utmp.ut_line));
     (void)strncpy(utmp.ut_name, pclogin, sizeof(utmp.ut_name));
     (void)strncpy(utmp.ut_host, "(autologin)", sizeof(utmp.ut_host));
-#else
+# else
     /* look through /etc/utmp by hand (sigh)
      */
     iFound = iPos = 0;
@@ -543,7 +543,7 @@ make_utmp(pclogin, pctty)
 	iPos++;
     }
     (void)strncpy(utmp.ut_name, pclogin, sizeof(utmp.ut_name));
-#endif
+# endif
 #endif
     utmp.ut_time = time((time_t *)0);
 
@@ -559,7 +559,7 @@ make_utmp(pclogin, pctty)
 
 
 void
-usage()
+usage(void)
 {
     char *u_pch;
     int u_loop;

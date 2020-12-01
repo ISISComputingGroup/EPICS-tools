@@ -1,6 +1,4 @@
 /*
- *  $Id: readconf.h,v 5.6 2013/09/18 14:31:39 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -14,6 +12,7 @@ typedef struct config {
     char *port;
     char *escape;
     FLAG striphigh;
+    FLAG exitdown;
     unsigned short replay;
     unsigned short playback;
 #if HAVE_OPENSSL
@@ -37,6 +36,6 @@ extern CONFIG *pConfig;
 extern TERM *pTerm;
 extern SUBST *substData;
 
-extern void ReadConf PARAMS((char *, FLAG));
-extern void DestroyConfig PARAMS((CONFIG *));
-extern void DestroyTerminal PARAMS((TERM *));
+extern void ReadConf(char *, FLAG);
+extern void DestroyConfig(CONFIG *);
+extern void DestroyTerminal(TERM *);

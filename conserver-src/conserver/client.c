@@ -1,6 +1,4 @@
 /*
- *  $Id: client.c,v 5.95 2013/09/25 22:10:29 bryan Exp $
- *
  *  Copyright conserver.com, 2000
  *
  *  Maintainer/Enhancer: Bryan Stansell (bryan@conserver.com)
@@ -43,9 +41,14 @@
 #include <group.h>
 #include <readcfg.h>
 
+#if USE_IPV6
+# include <sys/socket.h>
+# include <netdb.h>
+#endif /* USE_IPV6 */
+
 #if defined(USE_LIBWRAP)
-#include <syslog.h>
-#include <tcpd.h>
+# include <syslog.h>
+# include <tcpd.h>
 int allow_severity = LOG_INFO;
 int deny_severity = LOG_WARNING;
 #endif
@@ -54,12 +57,7 @@ int deny_severity = LOG_WARNING;
 /* find the next guy who wants to write on the console			(ksb)
  */
 void
-#if PROTOTYPES
 FindWrite(CONSENT *pCE)
-#else
-FindWrite(pCE)
-    CONSENT *pCE;
-#endif
 {
     CONSCLIENT *pCLfound = (CONSCLIENT *)0;
     CONSCLIENT *pCL;
@@ -91,13 +89,7 @@ FindWrite(pCE)
 }
 
 void
-#if PROTOTYPES
 BumpClient(CONSENT *pCE, char *message)
-#else
-BumpClient(pCE, message)
-    CONSENT *pCE;
-    char *message;
-#endif
 {
     if ((CONSCLIENT *)0 == pCE->pCLwr)
 	return;
@@ -118,20 +110,13 @@ BumpClient(pCE, message)
 #define REPLAYBUFFER 4096
 
 void
-#if PROTOTYPES
 Replay(CONSENT *pCE, CONSFILE *fdOut, unsigned short back)
-#else
-Replay(pCE, fdOut, back)
-    CONSENT *pCE;
-    CONSFILE *fdOut;
-    unsigned short back;
-#endif
 {
     CONSFILE *fdLog = (CONSFILE *)0;
     STRING *line = (STRING *)0;
     off_t file_pos;
     off_t buf_pos;
-    char *buf;
+    char *buf = (char *)0;
     char *bp = (char *)0;
     int ch;
     struct stat stLog;
@@ -386,50 +371,45 @@ typedef struct HLnode {
 } HELP;
 
 static HELP aHLTable[] = {
-    {WHEN_ALWAYS, ".    disconnect"},
-    {WHEN_ALWAYS | IS_LIMITED, ";    move to another console"},
-    {WHEN_ALWAYS, "a    attach read/write"},
-    {WHEN_ALWAYS, "b    send broadcast message"},
-    {WHEN_ATTACH, "c    toggle flow control"},
-    {WHEN_ATTACH, "d    down a console"},
-    {WHEN_ALWAYS, "e    change escape sequence"},
-    {WHEN_ALWAYS, "f    force attach read/write"},
-    {WHEN_ALWAYS, "g    group info"},
-    {WHEN_ALWAYS, "i    information dump"},
-    {WHEN_ATTACH, "L    toggle logging on/off"},
-    {WHEN_ATTACH, "l?   break sequence list"},
-    {WHEN_ATTACH, "l0   send break per config file"},
-    {WHEN_ATTACH, "l1-9 send specific break sequence"},
-    {WHEN_ALWAYS, "m    display the message of the day"},
-    {WHEN_ALWAYS, "n    write a note to the logfile"},
-    {WHEN_ALWAYS, "o    (re)open the tty and log file"},
-    {WHEN_ALWAYS, "p    playback the last %hu lines"},
-    {WHEN_ALWAYS, "P    set number of playback lines"},
-    {WHEN_ALWAYS, "r    replay the last %hu lines"},
-    {WHEN_ALWAYS, "R    set number of replay lines"},
-    {WHEN_ATTACH, "s    spy mode (read only)"},
-    {WHEN_ALWAYS, "u    show host status"},
-    {WHEN_ALWAYS, "v    show version info"},
-    {WHEN_ALWAYS, "w    who is on this console"},
-    {WHEN_ALWAYS, "x    show console baud info"},
-    {WHEN_ALWAYS | IS_LIMITED, "z    suspend the connection"},
-    {WHEN_ATTACH, "!    invoke task"},
-    {WHEN_ATTACH | IS_LIMITED, "|    attach local command"},
-    {WHEN_ALWAYS, "?    print this message"},
-    {WHEN_ALWAYS, "<cr> ignore/abort command"},
-    {WHEN_ALWAYS, "^R   replay the last line"},
-    {WHEN_ATTACH, "\\ooo send character by octal code"},
+    {WHEN_ALWAYS, ".       disconnect"},
+    {WHEN_ALWAYS | IS_LIMITED, ";       move to another console"},
+    {WHEN_ALWAYS, "a       attach read/write"},
+    {WHEN_ALWAYS, "b       send broadcast message"},
+    {WHEN_ATTACH, "c       toggle flow control"},
+    {WHEN_ATTACH, "d       down a console"},
+    {WHEN_ALWAYS, "e       change escape sequence"},
+    {WHEN_ALWAYS, "f       force attach read/write"},
+    {WHEN_ALWAYS, "g       group info"},
+    {WHEN_ALWAYS, "i       information dump"},
+    {WHEN_ATTACH, "L       toggle logging on/off"},
+    {WHEN_ATTACH, "l?      break sequence list"},
+    {WHEN_ATTACH, "l0      send break per config file"},
+    {WHEN_ATTACH, "l1-9a-z send specific break sequence"},
+    {WHEN_ALWAYS, "m       display message of the day"},
+    {WHEN_ALWAYS, "n       write a note to the logfile"},
+    {WHEN_ALWAYS, "o       (re)open the tty and log file"},
+    {WHEN_ALWAYS, "p       playback the last %hu lines"},
+    {WHEN_ALWAYS, "P       set number of playback lines"},
+    {WHEN_ALWAYS, "r       replay the last %hu lines"},
+    {WHEN_ALWAYS, "R       set number of replay lines"},
+    {WHEN_ATTACH, "s       spy mode (read only)"},
+    {WHEN_ALWAYS, "u       show host status"},
+    {WHEN_ALWAYS, "v       show version info"},
+    {WHEN_ALWAYS, "w       who is on this console"},
+    {WHEN_ALWAYS, "x       show console baud info"},
+    {WHEN_ALWAYS | IS_LIMITED, "z       suspend the connection"},
+    {WHEN_ATTACH, "!       invoke task"},
+    {WHEN_ATTACH | IS_LIMITED, "|       attach local command"},
+    {WHEN_ALWAYS, "?       print this message"},
+    {WHEN_ALWAYS, "<cr>    ignore/abort command"},
+    {WHEN_ALWAYS, "^R      replay the last line"},
+    {WHEN_ATTACH, "\\ooo    send character by octal code"},
 };
 
 /* list the commands we know for the user				(ksb)
  */
 void
-#if PROTOTYPES
 HelpUser(CONSCLIENT *pCL)
-#else
-HelpUser(pCL, pCE)
-    CONSCLIENT *pCL;
-#endif
 {
     int i, j, iCmp;
     static char
@@ -505,34 +485,19 @@ HelpUser(pCL, pCE)
 }
 
 int
-#if PROTOTYPES
 ClientAccessOk(CONSCLIENT *pCL)
-#else
-ClientAccessOk(pCL)
-    CONSCLIENT *pCL;
-#endif
 {
     char *peername = (char *)0;
     int retval = 1;
 
-#if USE_UNIX_DOMAIN_SOCKETS
-    struct in_addr addr;
-
-# if HAVE_INET_ATON
-    inet_aton("127.0.0.1", &addr);
-# else
-    addr.s_addr = inet_addr("127.0.0.1");
-# endif
-    pCL->caccess = AccType(&addr, &peername);
-    if (pCL->caccess == 'r') {
-	FileWrite(pCL->fd, FLAGFALSE, "access from your host refused\r\n",
-		  -1);
-	retval = 0;
-    }
-#else
+#if USE_IPV6 || !USE_UNIX_DOMAIN_SOCKETS
     socklen_t so;
     int cfd;
-    struct sockaddr_in in_port;
+# if USE_IPV6
+    int error;
+    char addr[NI_MAXHOST];
+# endif
+    SOCKADDR_STYPE in_port;
     int getpeer = -1;
 
     cfd = FileFDNum(pCL->fd);
@@ -559,20 +524,56 @@ ClientAccessOk(pCL)
 	retval = 0;
 	goto setpeer;
     }
-    pCL->caccess = AccType(&in_port.sin_addr, &peername);
+    pCL->caccess = AccType(
+# if USE_IPV6
+			      &in_port,
+# else
+			      &in_port.sin_addr,
+# endif
+			      &peername);
     if (pCL->caccess == 'r') {
 	FileWrite(pCL->fd, FLAGFALSE, "access from your host refused\r\n",
 		  -1);
 	retval = 0;
     }
   setpeer:
+#else
+    struct in_addr addr;
+
+# if HAVE_INET_ATON
+    inet_aton("127.0.0.1", &addr);
+# else
+    addr.s_addr = inet_addr("127.0.0.1");
+# endif
+    pCL->caccess = AccType(&addr, &peername);
+    if (pCL->caccess == 'r') {
+	FileWrite(pCL->fd, FLAGFALSE, "access from your host refused\r\n",
+		  -1);
+	retval = 0;
+    }
 #endif
 
     if (pCL->peername != (STRING *)0) {
 	BuildString((char *)0, pCL->peername);
 	if (peername != (char *)0)
 	    BuildString(peername, pCL->peername);
-#if USE_UNIX_DOMAIN_SOCKETS
+#if USE_IPV6
+	else if (getpeer != -1) {
+	    error =
+		getnameinfo((struct sockaddr *)&in_port, so, addr,
+			    sizeof(addr), NULL, 0, NI_NUMERICHOST);
+	    if (error) {
+		FileWrite(pCL->fd, FLAGFALSE, "getnameinfo failed\r\n",
+			  -1);
+		Error("ClientAccessOk(): gatenameinfo: %s",
+		      gai_strerror(error));
+		retval = 0;
+	    }
+
+	    BuildString(addr, pCL->peername);
+	} else
+	    BuildString("<unknown>", pCL->peername);
+#elif USE_UNIX_DOMAIN_SOCKETS
 	else
 	    BuildString("127.0.0.1", pCL->peername);
 #else
