@@ -12,8 +12,8 @@ for i in kill.exe rm.exe ps.exe; do
     cp -f /usr/bin/$i ../cygwin_bin/cygwin_$i
     cp -f /usr/bin/$i ../cygwin_bin64/cygwin_$i
 done
-# cygintl-8.dll is needed by rm.exe
-for i in cygwin1.dll cygintl-8.dll cygpath.exe; do
+# cygintl-8.dll and cygiconv-2.dll are needed by rm.exe
+for i in cygwin1.dll cygintl-8.dll cygiconv-2.dll cygpath.exe; do
     cp -f /usr/bin/$i ../cygwin_bin
     cp -f /usr/bin/$i ../cygwin_bin64
 done
