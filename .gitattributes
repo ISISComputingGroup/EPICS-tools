@@ -18,3 +18,4 @@ config.guess text eol=lf
 configure text eol=lf
 configure.ac text eol=lf
 gen-version text eol=lf
+install-sh text eol=lf
