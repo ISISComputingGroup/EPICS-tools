@@ -34,7 +34,7 @@ AC_PREREQ(2.59)
 AC_CONFIG_SRCDIR([conserver/main.c])
 AC_CONFIG_HEADER(config.h)
 
-AC_DEFINE_UNQUOTED(CONFIGINVOCATION, "$0 $@")
+AC_DEFINE_UNQUOTED(CONFIGINVOCATION, "$0 $*")
 
 dnl ### Set some option defaults. ###################################
 if test -z "$CFLAGS"; then
