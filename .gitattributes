@@ -10,6 +10,7 @@
 
 *.exe binary
 *.dll binary
+*.bat eol=crlf
 
 # for cygwin
 *.sh text eol=lf
