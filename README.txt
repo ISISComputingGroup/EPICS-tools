@@ -11,3 +11,5 @@ Note that /etc/fstab in mini_cygwin64 should have "noacl" added - this is to
 avoid permission problems. The line should look like:
 
     none /cygdrive cygdrive binary,noacl,posix=0,user 0 0
+
+Do this only in mini_cygwin64 and not the cygwin64 main build
