@@ -540,7 +540,7 @@ Daemonize(void)
     fflush(stdout);
     fflush(stderr);
 
-    switch (res = fork()) {
+    switch (res = forkWithRetry()) {
 	case -1:
 	    Error("Daemonize(): fork(): %s", strerror(errno));
 	    Bye(EX_TEMPFAIL);

@@ -587,3 +587,16 @@ ClientAccessOk(CONSCLIENT *pCL)
 	free(peername);
     return retval;
 }
+
+/*
+ * on cygwin we can get random fork failures so retry 
+ */
+pid_t forkWithRetry(void)
+{
+    pid_t pid = fork();
+    if (pid < 0) {
+        sleep(1);
+        pid = fork();
+    }
+    return pid;
+}

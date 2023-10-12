@@ -1763,7 +1763,7 @@ StartTask(CONSENT *pCE, char *cmd, uid_t uid, gid_t gid)
     fflush(stdout);
     fflush(stderr);
 
-    switch (pCE->taskpid = fork()) {
+    switch (pCE->taskpid = forkWithRetry()) {
 	case -1:
 	    pCE->taskpid = 0;
 	    return -1;
@@ -5232,7 +5232,7 @@ Spawn(GRPENT *pGE, int msfd)
 
     fflush(stderr);
     fflush(stdout);
-    switch (pid = fork()) {
+    switch (pid = forkWithRetry()) {
 	case -1:
 	    Error("Spawn(): fork(): %s", strerror(errno));
 	    Bye(EX_OSERR);

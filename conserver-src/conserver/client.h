@@ -96,3 +96,4 @@ extern void HelpUser(CONSCLIENT *);
 extern void FindWrite(CONSENT *);
 extern int ClientAccessOk(CONSCLIENT *);
 extern void BumpClient(CONSENT *, char *);
+extern pid_t forkWithRetry(void);

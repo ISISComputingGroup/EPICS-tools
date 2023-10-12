@@ -403,7 +403,7 @@ StartInit(CONSENT *pCE)
     fflush(stdout);
     fflush(stderr);
 
-    switch (pCE->initpid = fork()) {
+    switch (pCE->initpid = forkWithRetry()) {
 	case -1:
 	    pCE->initpid = 0;
 	    return;
@@ -571,7 +571,7 @@ VirtDev(CONSENT *pCE)
     fflush(stdout);
     fflush(stderr);
 
-    switch (pCE->ipid = fork()) {
+    switch (pCE->ipid = forkWithRetry()) {
 	case -1:
 	    pCE->ipid = 0;
 	    return -1;
