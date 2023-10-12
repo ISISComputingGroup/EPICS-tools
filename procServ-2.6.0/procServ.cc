@@ -775,10 +775,14 @@ void forkAndGo()
     int fh;
 
     if ((p = fork()) < 0) {  // Fork failed
-        perror("Could not fork daemon process");
-        exit(errno);
-
-    } else if (p > 0) {      // I am the PARENT (foreground command)
+        perror("Could not fork daemon process - will retry");
+        sleep(1);
+        if ((p = fork()) < 0) {  // Fork failed
+            perror("Could not fork daemon process");
+            exit(errno);
+        }
+    }
+    if (p > 0) {      // I am the PARENT (foreground command)
         if (!quiet) {
             fprintf(stderr, "%s: spawning daemon process: %ld\n", procservName, (long) p);
             if (-1 == logFileFD) {

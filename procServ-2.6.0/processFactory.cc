@@ -153,6 +153,11 @@ processClass::processClass(char *exe, char *argv[])
 	
 	
     _pid = forkpty(&_fd, factoryName, NULL, NULL);
+    if (_pid < 0) {
+        fprintf(stderr, "Retrying fork: %s\n", errno == ENOENT ? "No pty" : strerror(errno));
+        sleep(1);
+        _pid = forkpty(&_fd, factoryName, NULL, NULL);
+    }
 
     _markedForDeletion = _pid <= 0;
     if (_pid)                               // I am the parent
