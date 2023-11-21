@@ -11,6 +11,7 @@ pipeline {
 
   environment {
       NODE = "${env.NODE_NAME}"
+      ELOCK = "epics_${NODE}"
   }
 
   // The options directive is for configuration that applies to the whole job.
@@ -34,12 +35,14 @@ pipeline {
     stage("Build") {
         steps {
             echo "Building"
-            timeout(time: 16, unit: 'HOURS') {
+            lock(resource: ELOCK, inversePrecedence: false) {
+              timeout(time: 16, unit: 'HOURS') {
                 echo "Branch: ${env.BRANCH_NAME}"
                 echo "Build Number: ${env.BUILD_NUMBER}"
                 bat """
                     jenkins_build.bat
                 """
+              }
             }
         }
     }
