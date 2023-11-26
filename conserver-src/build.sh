@@ -1,9 +1,10 @@
 #!/bin/sh
 set -o errexit
-autoreconf -fvi
-sh ./configure --with-libwrap --with-openssl --with-master=conserver.nd.rl.ac.uk --with-port=782 --with-pidfile=/cygdrive/c/windows/temp/EPICS_CONSERVER.pid
-make clean
-make
+autoreconf -fvi || autoreconf -fvi || autoreconf -fvi
+CONF_ARGS="--with-libwrap --with-openssl --with-master=conserver.nd.rl.ac.uk --with-port=782 --with-pidfile=/cygdrive/c/windows/temp/EPICS_CONSERVER.pid"
+sh ./configure $CONF_ARGS || sh ./configure $CONF_ARGS
+make clean || make clean
+make || make
 for i in conserver/conserver.exe console/console.exe conserver.cf/samples/basic.cf; do
     cp -f $i ../cygwin/bin
 done
