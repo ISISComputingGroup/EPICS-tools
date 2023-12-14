@@ -51,6 +51,13 @@ pipeline {
   post {
     always {
       archiveArtifacts artifacts: '**/config.log', caseSensitive: false
+      logParser ([
+            projectRulePath: 'parse_rules',
+            parsingRulesPath: '',
+            showGraphs: true, 
+            unstableOnWarning: true,
+            useProjectRule: true,
+        ])
     }
   }
 
