@@ -17,6 +17,8 @@ for /F "usebackq" %%I in (`c:\cygwin64\bin\cygpath --absolute .`) do SET CURRENT
 c:\cygwin64\bin\bash.exe --login -c "cd %CURRENT%; sh build.sh"
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 cd ..
-robocopy "%~dp0cygwin" "\\isis.cclrc.ac.uk\inst$\Kits$\CompGroup\ICP\Binaries\EPICS_Tools\cygwin" /E /PURGE /NFL /NDL /NP /XF "rebase.db.x86_64" /R:5
+set "CYGCOPYDIR=\\isis.cclrc.ac.uk\inst$\Kits$\CompGroup\ICP\Binaries\EPICS_Tools\cygwin"
+robocopy "%~dp0cygwin" "%CYGCOPYDIR%" /E /PURGE /NFL /NDL /NP /XF "rebase.db.x86_64" /R:5
 if %ERRORLEVEL% GEQ 4 exit /b %ERRORLEVEL%
+c:\cygwin64\bin\peflags.exe --dynamicbase=0 "%CYGCOPYDIR%\bin\cygwin1.dll"
 exit /b 0
