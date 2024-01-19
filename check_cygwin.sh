@@ -1,4 +1,5 @@
 #!/bin/sh
+set -o errexit
 
 # check we have ASLR disabled as that can cause fork() issues
 if test `peflags -d /bin/cygwin1.dll | grep '\-dynamicbase' | wc -l` -eq 1; then
