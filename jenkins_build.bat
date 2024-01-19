@@ -11,7 +11,8 @@ del "%~dp0cygwin1-nodb.dll"
 "%~dp0build_utils\sed.exe" -i -e "s/^none \/cygdrive.*/none \/cygdrive cygdrive binary,noacl,posix=0,user 0 0/" "%~dp0cygwin\etc\fstab"
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 REM the full cygwin with compiler packages is in c:\cygwin64
-c:\cygwin64\bin\bash.exe --login -c "sh check_cygwin.sh"
+for /F "usebackq" %%I in (`c:\cygwin64\bin\cygpath --absolute .`) do SET CURRENT=%%I
+c:\cygwin64\bin\bash.exe --login -c "cd %CURRENT%; sh check_cygwin.sh"
 if %ERRORLEVEL% NEQ 0 exit /b %ERRORLEVEL%
 cd procServ-2.6.0
 for /F "usebackq" %%I in (`c:\cygwin64\bin\cygpath --absolute .`) do SET CURRENT=%%I
