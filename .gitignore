@@ -28,6 +28,10 @@ conserver-src/Makefile
 conserver-src/configure
 conserver-src/autologin/Makefile
 conserver-src/config.h
+conserver-src/config.h.in
+conserver-src/config.sub
+conserver-src/config.guess
+conserver-src/install-sh
 conserver-src/conserver.cf/Makefile
 conserver-src/conserver/Makefile
 conserver-src/conserver/conserver.exe
@@ -37,7 +41,9 @@ conserver-src/console/Makefile
 conserver-src/console/console.exe
 conserver-src/contrib/chat/Makefile
 procServ-2.6.0/Makefile
+procServ-2.6.0/INSTALL
 procServ-2.6.0/configure
+procServ-2.6.0/aclocal.m4
 procServ-2.6.0/build-aux/
 procServ-2.6.0/Makefile.in
 procServ-2.6.0/procServ.exe
