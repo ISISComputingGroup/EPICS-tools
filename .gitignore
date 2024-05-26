@@ -22,6 +22,8 @@ autom4te.cache/
 config.log
 config.status
 *~
+sed*
+*.man
 conserver-src/Makefile
 conserver-src/configure
 conserver-src/autologin/Makefile
