@@ -1214,6 +1214,48 @@ VerifyEmptyDirectory(char *d)
 }
 #endif
 
+/*
+ * force a daily log rotation by raising SIGUSR2 when date changes
+ */
+static void*
+logRotator(void* arg)
+{
+    pthread_t main_thread = *(pthread_t*)arg;
+    time_t now = time(NULL);
+    struct tm now_tm;
+    int day, old_day;
+    struct timespec delay;
+    delay.tv_sec = 60;
+    delay.tv_nsec = 0;
+    localtime_r(&now, &now_tm);
+    old_day = now_tm.tm_mday;
+    sigset_t set;
+    sigemptyset(&set);
+    /* ignore SIGUSR1 and SIGUSR1 used to signal process actions */
+    sigaddset(&set, SIGUSR1);
+    sigaddset(&set, SIGUSR2);
+    if (pthread_sigmask(SIG_BLOCK, &set, NULL) < 0) {
+        Msg("logRotator: error setting signal mask");
+    }
+    while(1) {
+        time(&now);
+        localtime_r(&now, &now_tm);
+        day = now_tm.tm_mday;
+        if (day != old_day) {
+            if (pthread_kill(main_thread, SIGUSR2) < 0) {
+                Msg("logRotator: error rotating logs day %d", day);
+            } else {
+                Msg("logRotator: rotating logs day %d", day);
+            }
+            old_day = day;
+        }
+        if (nanosleep(&delay, NULL) < 0) {
+            Msg("logRotator: nanosleep interrupted day %d", day);
+        }
+    }
+    return NULL;
+}
+
 /* find out where/who we are						(ksb)
  * parse optons
  * read in the config file, open the log file
@@ -1226,6 +1268,8 @@ int
 main(int argc, char **argv)
 {
     int i;
+    pthread_t log_rotator_thread;
+    pthread_t main_thread;
     FILE *fpConfig = (FILE *)0;
     static char acOpts[] = "7a:b:c:C:dDEFhiL:m:M:noO:p:P:RSuU:Vv";
 #ifndef __CYGWIN__
@@ -1804,10 +1848,15 @@ main(int argc, char **argv)
 
 	fflush(stdout);
 	fflush(stderr);
+    main_thread = pthread_self();
+    if (pthread_create(&log_rotator_thread, NULL, logRotator, &main_thread) != 0) {
+        Msg("Master(): unable to create log rotator thread");
+    }
 	Master();
 
 	/* stop putting kids back, and shoot them
 	 */
+    pthread_cancel(log_rotator_thread);
 	SimpleSignal(SIGCHLD, SIG_DFL);
 	SignalKids(SIGTERM);
     }
