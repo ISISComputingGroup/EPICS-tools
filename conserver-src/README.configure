@@ -1,3 +1,3 @@
 #!/bin/sh
 autoreconf -fvi
-./configure --with-libwrap --with-openssl --with-master=conserver.nd.rl.ac.uk --with-port=782 --with-pidfile=/cygdrive/c/windows/temp/EPICS_CONSERVER.pid
+./configure --with-libwrap --with-openssl --with-master=conserver.nd.rl.ac.uk --with-port=782 --with-pidfile=/cygdrive/c/instrument/var/run/EPICS_CONSERVER.pid

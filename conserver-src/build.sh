@@ -1,7 +1,7 @@
 #!/bin/sh
 set -o errexit
 autoreconf -fvi || autoreconf -fvi || autoreconf -fvi
-CONF_ARGS="--with-libwrap --with-openssl --with-master=conserver.nd.rl.ac.uk --with-port=782 --with-pidfile=/cygdrive/c/windows/temp/EPICS_CONSERVER.pid"
+CONF_ARGS="--with-libwrap --with-openssl --with-master=conserver.nd.rl.ac.uk --with-port=782 --with-pidfile=/cygdrive/c/instrument/var/run/EPICS_CONSERVER.pid"
 sh ./configure $CONF_ARGS || sh ./configure $CONF_ARGS
 make clean || make clean
 make || make
