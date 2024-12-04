@@ -863,7 +863,10 @@ void openLogFile()
     time_t now;
     struct tm now_tm;
     if (-1 != logFileFD) {
-        close(logFileFD);
+        if (close(logFileFD) != 0) {
+            perror("error closing old log file");
+        }
+        logFileFD = -1;
     }
     time(&now);
     localtime_r(&now, &now_tm);
