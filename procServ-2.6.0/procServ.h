@@ -50,6 +50,7 @@ extern pid_t  procservPid;
 extern rlim_t coreSize;
 extern char   *chDir;
 extern time_t holdoffTime;
+extern int    logFileFD;
 
 #define NL "\r\n"
 

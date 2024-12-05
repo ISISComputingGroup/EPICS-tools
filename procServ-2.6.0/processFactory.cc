@@ -210,6 +210,10 @@ processClass::processClass(char *exe, char *argv[])
     {
 	    sleep(1);   // to allow AssignProcessToJobObject() to happen - the process we spawn may spawn other processes so we want it to inherit
         setsid();                                  // Become process group leader
+        if (-1 != logFileFD) {
+            close(logFileFD); // so we don't keep log file open after parent daily rotates it
+            logFileFD = -1;
+        }
         if ( setCoreSize ) {                       // Set core size limit?
             getrlimit( RLIMIT_CORE, &corelimit );
             corelimit.rlim_cur = coreSize;
