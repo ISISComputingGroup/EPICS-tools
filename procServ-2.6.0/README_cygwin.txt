@@ -23,11 +23,13 @@ in place of "sh configure" above
 Running on Win32
 ----------------
 
-In the .bat file to launch procServ you should add:
+In the .bat file to launch procServ you may wish to add:
 
-    set CYGWIN=nodosfilewarning
-	
-to suppress warnings about using windows style paths.
+    set CYGWIN=disable_pcon
+
+this disables cygwin support for windows pseudoconsoles. In some cases, such as when using the
+console/conserver system to connect to procServ, restarting an IOC while connected caused all
+the output to be forced to 80 columns and ansi control sequences to appear in log files.
 
 Using windows style paths in arguments to procServ is ususally OK, but if you have problems try replacing them
 with cygwin syntax i.e. "/cygdrive/c/my/path" rather than "c:\my\path"

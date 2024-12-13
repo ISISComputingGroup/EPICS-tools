@@ -1,3 +1,4 @@
+@echo off
 setlocal
 REM disable ASLR in cygwin DLL to avoid fork issues in compile
 set MYCYG=c:\cygwin64
@@ -11,6 +12,11 @@ copy /y "%~dp0cygwin1-nodb.dll" "%MYCYG%\bin\cygwin1.dll"
 set errcode=%ERRORLEVEL%
 del "%~dp0cygwin1-nodb.dll"
 if %errcode% NEQ 0 (
-    @echo Error disabling ASLR on %MYCYG%\bin\cygwin1.dll
+    @echo ***
+    @echo *** Error disabling ASLR on %MYCYG%\bin\cygwin1.dll ***
+    @echo ***
     exit /b %errcode%
-) 
+)
+@echo.
+@echo *** All OK ***
+@echo.
