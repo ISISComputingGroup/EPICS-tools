@@ -11,3 +11,6 @@ if not exist "%~dp0cygwin\etc\cygserver.conf" (
     copy %~dp0cygwin\etc\defaults\etc\cygserver.conf %~dp0cygwin\etc\cygserver.conf
 )
 powershell -Command "Start-Process cmd -Args /c,\"%~dp0cygwin\usr\sbin\cygserver.exe --stderr --no-syslog\" -RSE C:\Instrument\Var\logs\ibex_server\cygserver_err.log -RSO C:\Instrument\Var\logs\ibex_server\cygserver_out.log -WindowStyle Hidden"
+REM we started using cygserver due to an ldap issue - give it time to setup
+@echo %DATE% %TIME% waiting 30 seconds for cygserver to complete setup
+waitfor /t 30 WillNeverHappen >NUL 2>&1
