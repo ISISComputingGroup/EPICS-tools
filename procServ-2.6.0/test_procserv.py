@@ -1,6 +1,6 @@
-import telnetlib
+import telnetlib3
 import time
-tn1=telnetlib.Telnet('localhost',20000)
+tn1=telnetlib3.Telnet('localhost',20000)
 while True :
     for i in range(10) :
         tn1.read_very_eager()
@@ -9,7 +9,7 @@ while True :
         tn1.write('\n\n\n\n\n\n')
         time.sleep(1)
     # connect to main port (r/w)
-    tn=telnetlib.Telnet('localhost',20000)
+    tn=telnetlib3.Telnet('localhost',20000)
     for i in range(5) :
         tn.read_very_eager()
         tn.write('dbl\n')
@@ -17,7 +17,7 @@ while True :
         tn.write('\n\n\n\n\n\n')
         time.sleep(1)
     # connect to log port (ro)
-    tn2=telnetlib.Telnet('localhost',20001)
+    tn2=telnetlib3.Telnet('localhost',20001)
     time.sleep(3)
     tn2.read_very_eager()
     time.sleep(1)
