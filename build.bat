@@ -2,7 +2,8 @@ setlocal
 REM this is a minimal cygwin install used at ibex runtime
 REM we install procServ and conserver into this directory
 robocopy "c:\mini_cygwin64" "%~dp0cygwin" /E /PURGE /NFL /NDL /NP ^
-    /XF "rebase.db.x86_64" /XD "c:\mini_cygwin64\home\gamekeeper" /R:5
+    /XF "rebase.db.x86_64" /XD "c:\mini_cygwin64\home\gamekeeper" /R:5 ^
+    /log:"%~dp0minicyg_copy.log"
 if %ERRORLEVEL% GEQ 4 exit /b %ERRORLEVEL%
 REM disable ASLR in copied cygwin DLL to avoid later fork issues
 call %~dp0disable_aslr.bat %~dp0cygwin

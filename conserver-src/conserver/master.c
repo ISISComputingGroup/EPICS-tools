@@ -680,7 +680,7 @@ void
 Master(void)
 {
     int cfd;
-    int msfd;
+    int msfd = -1;
     socklen_t so;
     fd_set rmask, wmask;
 #if USE_IPV6 || !USE_UNIX_DOMAIN_SOCKETS
@@ -762,6 +762,7 @@ Master(void)
 
       fail:
 	close(msfd);
+    msfd = -1;
     }
 
     if (listen(msfd, SOMAXCONN) < 0) {
@@ -843,6 +844,7 @@ Master(void)
 	      strerror(errno));
 	return;
     }
+    Msg("listening on port %hu", ntohs(master_port.sin_port));
 #endif
 
     fp = fopen(PIDFILE, "w");

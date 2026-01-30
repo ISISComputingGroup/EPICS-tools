@@ -50,7 +50,7 @@ pipeline {
   
   post {
     always {
-      archiveArtifacts artifacts: '**/config.log', caseSensitive: false
+      archiveArtifacts artifacts: '**/config.log, cyg_copy.log, minicgy_copy.log', caseSensitive: false
       logParser ([
             projectRulePath: 'parse_rules',
             parsingRulesPath: '',

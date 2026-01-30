@@ -38,7 +38,7 @@ AC_DEFINE_UNQUOTED(CONFIGINVOCATION, "$0 $*")
 
 dnl ### Set some option defaults. ###################################
 if test -z "$CFLAGS"; then
-  CFLAGS="-O"
+  CFLAGS="-Wall -g"
 fi
 MKDIR="mkdir -p -m 755"
 AC_SUBST(MKDIR)
@@ -359,11 +359,12 @@ AC_TRY_COMPILE([#include <sys/types.h>
 dnl ### Host specific checks. ######################################
 AC_CANONICAL_HOST
 
-## no longer works on cygwin if we want ssl
-#if test "$host_os" = "cygwin"; then
+if test "$host_os" = "cygwin"; then
+    LDFLAGS="$LDFLAGS -g"
+## static no longer works on cygwin if we want ssl
+#    AC_MSG_RESULT("Enabling static linking")
 #    LDFLAGS="$LDFLAGS -static"
-#	AC_MSG_RESULT("Enabling static linking")
-#fi
+fi
 
 case "$host" in
 *-*-hpux*)
@@ -839,7 +840,6 @@ AC_ARG_WITH(ipv6,
 		AC_MSG_RESULT(no)
 		;;
 	esac],[AC_MSG_RESULT(no)])
-
 
 dnl Checks for pty allocation...
 dnl According to the xemacs distribution:
