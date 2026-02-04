@@ -1,7 +1,6 @@
 #include <config.h>
 
 /* things everything seems to need */
-#include <pthread.h>
 #include <stdio.h>
 #include <sys/param.h>
 #include <sys/socket.h>

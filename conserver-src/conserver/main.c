@@ -1215,45 +1215,40 @@ VerifyEmptyDirectory(char *d)
 #endif
 
 /*
- * force a daily log rotation by raising SIGUSR2 when date changes
+ * force a daily log rotation by raising SIGUSR2 every day
  */
-static void*
-logRotator(void* arg)
+static void
+setupLogRotator()
 {
-    pthread_t main_thread = *(pthread_t*)arg;
-    time_t now = time(NULL);
+    timer_t timerid;
+    struct sigevent sev;
+    struct itimerspec its;
+    time_t now;
     struct tm now_tm;
-    int day, old_day;
-    struct timespec delay;
-    delay.tv_sec = 60;
-    delay.tv_nsec = 0;
+    const int SECONDS_IN_DAY = 24 * 3600;
+    int secs_to_midnight;
+    memset(&sev, 0, sizeof(struct sigevent));
+    sev.sigev_notify = SIGEV_SIGNAL;
+    sev.sigev_signo = SIGUSR2;
+    if (timer_create(CLOCK_REALTIME, &sev, &timerid) == -1) {
+        Error("timer_create(): %s", strerror(errno));
+        return;
+    }
+    time(&now);
     localtime_r(&now, &now_tm);
-    old_day = now_tm.tm_mday;
-    sigset_t set;
-    sigemptyset(&set);
-    /* ignore SIGUSR1 and SIGUSR1 used to signal process actions */
-    sigaddset(&set, SIGUSR1);
-    sigaddset(&set, SIGUSR2);
-    if (pthread_sigmask(SIG_BLOCK, &set, NULL) < 0) {
-        Msg("logRotator: error setting signal mask");
+    /* not sure if we need to worry about being started at exactly midnight?
+     * also add a few seconds to leaps seconds or other stuff
+     */
+    secs_to_midnight = 10 + SECONDS_IN_DAY - now_tm.tm_sec - 60 * now_tm.tm_min - 3600 * now_tm.tm_hour;
+    its.it_value.tv_sec = secs_to_midnight; // Initial expiration
+    its.it_value.tv_nsec = 0;
+    its.it_interval.tv_sec = SECONDS_IN_DAY; // Expire interval
+    its.it_interval.tv_nsec = 0;
+    if (timer_settime(timerid, 0, &its, NULL) == -1) {
+        Error("timer_settime(): %s", strerror(errno));
+        return;
     }
-    while(1) {
-        time(&now);
-        localtime_r(&now, &now_tm);
-        day = now_tm.tm_mday;
-        if (day != old_day) {
-            if (pthread_kill(main_thread, SIGUSR2) < 0) {
-                Msg("logRotator: error rotating logs day %d", day);
-            } else {
-                Msg("logRotator: rotating logs day %d", day);
-            }
-            old_day = day;
-        }
-        if (nanosleep(&delay, NULL) < 0) {
-            Msg("logRotator: nanosleep interrupted day %d", day);
-        }
-    }
-    return NULL;
+    Msg("Setup log rotator to signal in %d seconds and repeat daily", secs_to_midnight);
 }
 
 /* find out where/who we are						(ksb)
@@ -1268,8 +1263,6 @@ int
 main(int argc, char **argv)
 {
     int i;
-    pthread_t log_rotator_thread;
-    pthread_t main_thread;
     FILE *fpConfig = (FILE *)0;
     static char acOpts[] = "7a:b:c:C:dDEFhiL:m:M:noO:p:P:RSuU:Vv";
 #ifndef __CYGWIN__
@@ -1546,6 +1539,7 @@ main(int argc, char **argv)
 	    bindPort = ntohs((unsigned short)pSE->s_port);
 	}
     }
+    Msg("bind port %hu", bindPort);
 # endif
 
     /* set up the secondary port to bind to */
@@ -1615,6 +1609,7 @@ main(int argc, char **argv)
 	(interface[0] == '*' && interface[1] == '\000'))
 	bindAddr = INADDR_ANY;
     else {
+    Msg("interface specified with -M as %s", interface);
 # if HAVE_INET_ATON
 	if (inet_aton(interface, &inetaddr) == 0) {
 	    Error("inet_aton(%s): %s", interface, "invalid IP address");
@@ -1629,10 +1624,13 @@ main(int argc, char **argv)
 	}
 # endif
     }
-    if (fDebug) {
-	struct in_addr ba;
-	ba.s_addr = bindAddr;
-	CONDDEBUG((1, "main(): bind address set to `%s'", inet_ntoa(ba)));
+    {
+	    struct in_addr ba;
+	    ba.s_addr = bindAddr;
+        if (fDebug) {
+	        CONDDEBUG((1, "main(): bind address set to `%s'", inet_ntoa(ba)));
+        }
+        Msg("bind address set to `%s'", inet_ntoa(ba));
     }
 #endif
 
@@ -1848,15 +1846,11 @@ main(int argc, char **argv)
 
 	fflush(stdout);
 	fflush(stderr);
-    main_thread = pthread_self();
-    if (pthread_create(&log_rotator_thread, NULL, logRotator, &main_thread) != 0) {
-        Msg("Master(): unable to create log rotator thread");
-    }
+    setupLogRotator();
 	Master();
 
 	/* stop putting kids back, and shoot them
 	 */
-    pthread_cancel(log_rotator_thread);
 	SimpleSignal(SIGCHLD, SIG_DFL);
 	SignalKids(SIGTERM);
     }
